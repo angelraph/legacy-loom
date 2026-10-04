@@ -283,9 +283,16 @@ class Speak(BaseModel):
 
 
 @app.post("/api/tts")
-def tts(body: Speak):
+def tts(body: Speak, request: Request, x_visitor: str | None = Header(default=None),
+        x_family_key: str | None = Header(default=None)):
+    # Visitors carry a random id from their browser; the address is the fallback.
+    forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    visitor = (x_visitor or forwarded or (request.client.host if request.client else "anonymous"))[:64]
+    owner = bool(config.APP_PASSCODE) and x_family_key == config.APP_PASSCODE
     try:
-        audio_bytes = voice.speak(body.text)
+        audio_bytes = voice.speak(body.text, visitor=visitor, unlimited=owner)
+    except voice.QuotaReached as e:
+        raise HTTPException(429, str(e))
     except RuntimeError as e:
         raise HTTPException(503, str(e))
     return Response(audio_bytes, media_type="audio/mpeg")

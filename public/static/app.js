@@ -12,6 +12,14 @@ const PRONOUNS = { she: { sub: "she", obj: "her", pos: "her" }, he: { sub: "he",
 
 function passKey() { try { return localStorage.getItem("ll-pass") || ""; } catch { return ""; } }
 function setPassKey(v) { try { localStorage.setItem("ll-pass", v); } catch {} }
+// A random id for this browser, so read aloud limits apply per person rather than per address.
+function visitorId() {
+  try {
+    let id = localStorage.getItem("ll-visitor");
+    if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)); localStorage.setItem("ll-visitor", id); }
+    return id;
+  } catch { return ""; }
+}
 
 async function api(path, opts = {}) {
   const headers = { ...(opts.headers || {}) };
@@ -335,7 +343,15 @@ $("#thread").addEventListener("click", async (e) => {
       const copy = $(".body", a).cloneNode(true);
       $$(".cite", copy).forEach((c) => c.remove());
       const text = copy.textContent.replace(/\s+([.,;:!?])/g, "$1");
-      const res = await fetch("/api/tts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
+      const headers = { "content-type": "application/json", "x-visitor": visitorId() };
+      if (passKey()) headers["x-family-key"] = passKey();
+      const res = await fetch("/api/tts", { method: "POST", headers, body: JSON.stringify({ text }) });
+      if (res.status === 429) {
+        // Out of read alouds for today: point them at the real voice instead.
+        sp.remove();
+        a.querySelector(".actions").insertAdjacentHTML("beforeend", `<p class="tts-limit">${esc((await res.json()).detail)}</p>`);
+        return;
+      }
       if (!res.ok) throw new Error((await res.json()).detail);
       const url = URL.createObjectURL(await res.blob());
       audio.pause(); new Audio(url).play();

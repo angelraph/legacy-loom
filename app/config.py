@@ -44,6 +44,10 @@ TABPFN_TOKEN = _get("TABPFN_TOKEN")
 PLANNER_URL = _get("PLANNER_URL")
 PLANNER_MIN_ROWS = int(_get("PLANNER_MIN_ROWS", "8"))
 
+# Read aloud budget on the ElevenLabs free plan: new clips per visitor per day, and for everyone per day.
+TTS_PER_VISITOR = int(_get("TTS_PER_VISITOR", "3"))
+TTS_PER_DAY = int(_get("TTS_PER_DAY", "40"))
+
 # Serverless hosts (Vercel) freeze a function once it has replied, so work happens inside the request.
 SERVERLESS = bool(os.getenv("VERCEL"))
 if SERVERLESS:

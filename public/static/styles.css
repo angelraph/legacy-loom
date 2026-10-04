@@ -749,3 +749,4 @@ body.locked:not(.space-try) .memo-side { border-top: 0; padding-top: 0; }
   .live-stack { padding-left: 14px; }
   .live-card h4 { font-size: 22px; }
 }
+.tts-limit { flex-basis: 100%; margin: 4px 0 0; font-size: 14px; color: var(--ink-2); background: var(--sky); border-radius: 10px; padding: 9px 12px; }
