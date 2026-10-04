@@ -358,6 +358,15 @@ async function refreshMemos() {
   return state.memos;
 }
 
+// Hearts: anyone can love a recording, one heart per device. Separate from ratings.
+function lovedSet() { try { return new Set(JSON.parse(localStorage.getItem("ll-loved") || "[]")); } catch { return new Set(); } }
+function saveLoved(set) { try { localStorage.setItem("ll-loved", JSON.stringify([...set])); } catch {} }
+function loveLabel(n) { return n ? `Loved by ${n} listener${n === 1 ? "" : "s"}` : "Love this"; }
+function heart(m) {
+  const on = lovedSet().has(m._id), n = m.loves || 0;
+  return `<button class="heart ${on ? "on" : ""}" data-love="${m._id}" aria-pressed="${on}" aria-label="Love this recording"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-8.6C1.2 8.2 3 5 6.3 5c2 0 3.3 1.1 4 2.3h1.4C12.4 6.1 13.7 5 15.7 5 19 5 20.8 8.2 19.2 11.4 17 15.6 12 20 12 20z"/></svg><span>${loveLabel(n)}</span></button>`;
+}
+
 function stars(m) {
   return `<div class="stars-wrap"><div class="stars" data-rate="${m._id}">${[1, 2, 3, 4, 5].map((n) => `<button data-n="${n}" class="${(m.rating || 0) >= n ? "on" : ""}" aria-label="${n} stars">&#9733;</button>`).join("")}</div><div class="stars-label">${m.rating ? (m.rating >= 4 ? "A keeper" : "Rated") : "How good was this?"}</div></div>`;
 }
@@ -376,7 +385,7 @@ function memoCard(m) {
     </div>
     <div class="memo-side">
       <button class="play" data-play="${m._id}" data-start="0" aria-label="Play ${esc(m.title)}"></button>
-      ${busy ? "" : stars(m)}
+      ${busy ? "" : heart(m) + stars(m)}
     </div>
   </article>`;
 }
@@ -395,6 +404,21 @@ document.addEventListener("click", async (e) => {
   if (open) { location.hash = `memo/${open.dataset.open}`; return; }
   const play = e.target.closest(".memo [data-play], #memoDetail [data-play], .timeline [data-play], .recipe-card [data-play]");
   if (play) { playMemo(play.dataset.play, Number(play.dataset.start || 0)); return; }
+  const love = e.target.closest("[data-love]");
+  if (love) {
+    const id = love.dataset.love, set = lovedSet(), on = !set.has(id);
+    love.disabled = true;
+    try {
+      const r = await api(`/api/memos/${id}/love`, { method: "POST", json: { on } });
+      if (on) set.add(id); else set.delete(id);
+      saveLoved(set);
+      $$(`[data-love="${id}"]`).forEach((b) => { b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); b.querySelector("span").textContent = loveLabel(r.loves); });
+      const m = state.memos.find((x) => x._id === id); if (m) m.loves = r.loves;
+      if (state.memoCache[id]) state.memoCache[id].loves = r.loves;
+    } catch (err) { toast(err.message); }
+    love.disabled = false;
+    return;
+  }
   const star = e.target.closest("[data-rate] button");
   if (star) {
     const id = star.parentElement.dataset.rate, n = Number(star.dataset.n);
@@ -423,6 +447,7 @@ async function openMemo(id, t) {
     <div class="facts">${m.year ? `<span>${m.year}</span>` : ""}${m.era ? `<span>${esc(m.era)}</span>` : ""}${(m.people || []).map((p) => `<span>${esc(p)}</span>`).join("")}${(m.places || []).map((p) => `<span>${esc(p)}</span>`).join("")}${m.language ? `<span>spoken in ${esc(m.language)}</span>` : ""}${m.speech?.wpm ? `<span>${m.speech.wpm} words a minute</span>` : ""}</div>
     ${(m.quotes || []).map((q) => `<p class="quote">&ldquo;${esc(q)}&rdquo;</p>`).join("")}
     ${r ? `<div class="card recipe-box"><h3>${esc(r.name)}</h3>${r.serves ? `<p class="muted">Serves ${esc(r.serves)}</p>` : ""}<strong>Ingredients</strong><ul>${r.ingredients.map((i) => `<li>${esc(i)}</li>`).join("")}</ul><strong>Method</strong><ol>${r.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>${r.tips?.length ? `<strong>Tips</strong><ul>${r.tips.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : ""}</div>` : ""}
+    ${m.status === "ready" ? `<div class="love-row">${heart(m)}</div>` : ""}
     ${m.status === "ready" ? `<div class="card"><div class="row" style="justify-content:space-between"><h3>Rate this recording</h3>${stars(m)}</div><p class="muted small">Ratings teach the call planner which sessions go well.</p></div>` : ""}
     <div class="card"><h3>Transcript</h3><p class="muted small">Tap a line to hear it.</p><div class="transcript">${(m.segments || []).map((s) => `<div class="seg" data-memo="${m._id}" data-start="${s.start}"><time>${fmt(s.start)}</time><span>${esc(s.text)}</span></div>`).join("") || `<p class="muted">Not transcribed yet.</p>`}</div></div>
     <div class="card"><h3>Fix the details</h3><div class="row"><input id="editTitle" value="${esc(m.title)}"><input id="editYear" type="number" placeholder="Year" value="${m.year || ""}" style="max-width:110px"><button class="ghost" id="saveEdit">Save</button></div>

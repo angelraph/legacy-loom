@@ -186,6 +186,22 @@ def patch_memo(memo_id: str, patch: MemoPatch, _space: str = Depends(require_mem
     return {"ok": True}
 
 
+class Love(BaseModel):
+    on: bool = True
+
+
+@app.post("/api/memos/{memo_id}/love")
+def love_memo(memo_id: str, body: Love):
+    """A heart anyone can give. Separate from ratings, which teach the planner and stay with the keepers."""
+    mid = store.oid(memo_id)
+    query = {"_id": mid} if body.on else {"_id": mid, "loves": {"$gt": 0}}
+    store.db().memos.update_one(query, {"$inc": {"loves": 1 if body.on else -1}})
+    m = store.db().memos.find_one({"_id": mid}, {"loves": 1})
+    if not m:
+        raise HTTPException(404, "Memo not found")
+    return {"loves": m.get("loves", 0)}
+
+
 @app.post("/api/memos/{memo_id}/reprocess")
 def reprocess(memo_id: str, background: BackgroundTasks, _space: str = Depends(require_memo_write)):
     mid = store.oid(memo_id)
