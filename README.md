@@ -1,5 +1,9 @@
 # Legacy Loom
 
+**Live:** https://legacy-loom-ashen.vercel.app  
+**App:** https://legacy-loom-ashen.vercel.app/app  
+**Docs:** https://legacy-loom-ashen.vercel.app/docs
+
 Legacy Loom keeps one person's voice notes and makes them useful. You drop in the voice notes a friend sends you (the recipes, the stories, the "this is how my mum did it"), and it turns them into a private archive you can ask questions of. Every answer links to the second they said it. Recipes become a printable cookbook, and each page has a QR code that plays the cook explaining the dish.
 
 Open models do the core work: Gemma reads, files and answers, Whisper listens, and an open embedding model searches. Gemma and Whisper can run on a laptop with no GPU, so the voice notes don't have to leave the machine.
@@ -41,7 +45,8 @@ app/
   planner.py     TabPFN session planner
   voice.py       ElevenLabs speech
   book.py        printable cookbook with QR codes
-web/             the interface
+public/          landing, app, docs, FAQ and support pages
+tabpfn_api/      the planner as its own Vercel function
 scripts/setup_atlas.py
 ```
 
@@ -59,7 +64,7 @@ python -m scripts.setup_atlas   # creates the vector and text search indexes
 uvicorn app.main:app --port 8000
 ```
 
-Open http://127.0.0.1:8000, go to Settings and enter whose voice it is, then add a recording.
+Open http://127.0.0.1:8000/app, go to Settings and enter whose voice it is, then add a recording.
 
 Everything optional stays optional. Without an ElevenLabs key there is no read aloud button. Without a TabPFN token the planner says it is not configured. The app never fakes an answer.
 

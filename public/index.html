@@ -3,161 +3,117 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Legacy Loom</title>
-  <meta name="description" content="A private archive of one person's voice notes, powered by open models.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%239a4a22'/%3E%3Cpath d='M9 20c3-8 11-8 14 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M12 20c2-4.5 6-4.5 8 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <title>Legacy Loom: keep their voice, ask it anything</title>
+  <meta name="description" content="Legacy Loom turns a friend's voice notes into an archive you can talk to. Every answer plays back the moment they said it. Built on Gemma, Whisper and TabPFN.">
+  <meta property="og:title" content="Legacy Loom: keep their voice, ask it anything">
+  <meta property="og:description" content="Legacy Loom turns a friend's voice notes into an archive you can talk to. Every answer plays back the moment they said it. Built on Gemma, Whisper and TabPFN.">
+  <meta name="theme-color" content="#faf6ef">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23b5532a'/%3E%3Cpath d='M9 20c3-8 11-8 14 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M12 20c2-4.5 6-4.5 8 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css?v=4">
 </head>
-<body>
+<body class="site">
   <header class="top">
-    <div class="brand">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15"/><path d="M9 20c3-8 11-8 14 0M12 20c2-4.5 6-4.5 8 0"/></svg>
-      <div>
-        <h1>Legacy Loom</h1>
-        <p id="subtitle">An archive of one voice</p>
+    <div class="nav-shell">
+      <a class="brand" href="/" aria-label="Legacy Loom home">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15"/><path d="M9 20c3-8 11-8 14 0M12 20c2-4.5 6-4.5 8 0"/></svg>
+        <span class="brand-text"><strong>Legacy Loom</strong></span>
+      </a>
+      <nav class="site-links" id="siteLinks" aria-label="Site"><a href="/" class="on">Product</a><a href="/docs">Docs</a><a href="/faq">FAQ</a><a href="/support">Support</a></nav>
+      <div class="nav-actions">
+        <a class="primary like-btn" href="/app">Open the app</a>
+        <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
       </div>
     </div>
-    <button id="statusBtn" class="status-pill" title="Service status">
-      <span class="dot" id="statusDot"></span><span id="statusText">Checking</span>
-    </button>
   </header>
-
-  <nav class="tabs" id="tabs">
-    <button data-view="ask" class="active">Ask</button>
-    <button data-view="archive">Archive</button>
-    <button data-view="add">Add a memory</button>
-    <button data-view="recipes">Recipes</button>
-    <button data-view="timeline">Timeline</button>
-    <button data-view="planner">Next call</button>
-    <button data-view="settings">Settings</button>
-  </nav>
-
-  <main>
-    <section id="view-ask" class="view active">
-      <div class="ask-intro" id="askIntro">
-        <h2 id="askHeading">Ask about their life</h2>
-        <p class="muted">Answers come only from the recordings, with a link to the exact second it was said.</p>
-        <div class="chips" id="suggestions"></div>
-      </div>
-      <div id="thread" class="thread"></div>
-      <form id="askForm" class="ask-form">
-        <input id="askInput" autocomplete="off" placeholder="What did she say about..." maxlength="500">
-        <button type="submit" class="primary" id="askBtn">Ask</button>
-      </form>
-    </section>
-
-    <section id="view-archive" class="view">
-      <div class="view-head">
-        <h2>Archive</h2>
-        <p class="muted" id="archiveCount"></p>
-      </div>
-      <div id="memoList" class="memo-list"></div>
-    </section>
-
-    <section id="view-memo" class="view">
-      <button class="link back" data-back>Back to the archive</button>
-      <div id="memoDetail"></div>
-    </section>
-
-    <section id="view-add" class="view">
-      <div class="view-head"><h2>Add a memory</h2></div>
-      <div class="add-grid">
-        <div class="card">
-          <h3>Record now</h3>
-          <p class="muted">Sit with them, press record, and ask one good question.</p>
-          <button id="recBtn" class="rec"><span></span>Start recording</button>
-          <p id="recTime" class="rec-time"></p>
+  <main class="landing">
+      <div class="hero" id="hero">
+        <div class="glow" aria-hidden="true"></div>
+        <a class="announce" href="https://github.com/angelraph/legacy-loom" target="_blank" rel="noopener"><span class="announce-tag">Open source</span>Gemma 4 &middot; Whisper &middot; TabPFN <span aria-hidden="true">&rarr;</span></a>
+        <h2 class="hero-title">Keep their voice.<br><em>Ask it anything.</em></h2>
+        <p class="hero-sub">Legacy Loom turns the voice notes a friend sends you into an archive you can talk to. Every answer plays back the moment they said it.</p>
+        <div class="hero-cta">
+          <a class="primary like-btn big" href="/app">Open the app</a>
+          <a class="ghost big" href="/docs">Read the docs</a>
         </div>
-        <label class="card drop" id="drop">
-          <h3>Or upload voice notes</h3>
-          <p class="muted">WhatsApp voice notes, phone memos, mp3, m4a, ogg, wav. Several at once is fine.</p>
-          <input type="file" id="fileInput" accept="audio/*,.opus,.ogg,.m4a,.amr,.webm" multiple>
-          <span class="primary like-btn">Choose files</span>
-        </label>
-      </div>
-      <form id="uploadForm" class="card upload-form hidden">
-        <h3>About this recording</h3>
-        <div id="pendingFiles" class="pending"></div>
-        <div class="fields">
-          <label>When was it recorded?<input type="datetime-local" id="recordedAt" required></label>
-          <label>Who was asking?<input id="askedBy" list="askerList" placeholder="Your name"></label>
-          <datalist id="askerList"></datalist>
-          <label>What did you ask about?<input id="promptTopic" placeholder="e.g. her wedding, egusi soup"></label>
+
+        <div class="preview" aria-hidden="true">
+          <div class="pv-bar"><span></span><span></span><span></span><em>Legacy Loom</em></div>
+          <div class="pv-body">
+            <aside class="pv-side"><div class="pv-entry"><div class="pv-date"><b>12</b><span>SEP</span></div><div class="pv-lines"><i style="width:72%"></i><i style="width:45%"></i></div></div><div class="pv-entry on"><div class="pv-date"><b>19</b><span>SEP</span></div><div class="pv-lines"><i style="width:79%"></i><i style="width:56%"></i></div></div><div class="pv-entry"><div class="pv-date"><b>26</b><span>SEP</span></div><div class="pv-lines"><i style="width:86%"></i><i style="width:67%"></i></div></div><div class="pv-entry"><div class="pv-date"><b>03</b><span>OCT</span></div><div class="pv-lines"><i style="width:93%"></i><i style="width:48%"></i></div></div></aside>
+            <div class="pv-main">
+              <div class="pv-q"><i style="width:100%"></i></div>
+              <div class="pv-a">
+                <div class="pv-lines"><i style="width:92%"></i><i style="width:84%"></i><i style="width:66%"></i></div>
+                <div class="pv-cite"><b>1</b><span>Play from 2:14</span></div>
+              </div>
+              <div class="pv-player"><span class="pv-play"></span><div class="pv-wave"><span style="height:30%"></span><span style="height:55%"></span><span style="height:80%"></span><span style="height:45%"></span><span style="height:90%"></span><span style="height:60%"></span><span style="height:35%"></span><span style="height:70%"></span><span style="height:95%"></span><span style="height:50%"></span><span style="height:40%"></span><span style="height:75%"></span><span style="height:60%"></span><span style="height:30%"></span><span style="height:85%"></span><span style="height:55%"></span><span style="height:45%"></span><span style="height:65%"></span><span style="height:35%"></span><span style="height:50%"></span><span style="height:70%"></span><span style="height:40%"></span><span style="height:85%"></span><span style="height:55%"></span></div><em>2:14</em></div>
+            </div>
+          </div>
         </div>
-        <p class="muted small">The time matters: the call planner learns from when recordings happen.</p>
-        <div class="row"><button class="primary" type="submit">Save to the archive</button><button type="button" class="link" id="cancelUpload">Cancel</button></div>
-      </form>
-      <div id="uploadLog" class="upload-log"></div>
-    </section>
 
-    <section id="view-recipes" class="view">
-      <div class="view-head">
-        <h2 id="recipesHeading">Recipes</h2>
-        <a class="primary like-btn" href="/book" target="_blank" rel="noopener">Open the printable book</a>
-      </div>
-      <div id="recipeGrid" class="recipe-grid"></div>
-    </section>
+        <section class="how" id="how">
+          <p class="kicker">How it works</p>
+          <h3 class="section-title">From a voice note to an answer, <em>in three steps</em></h3>
+          <ol class="steps-row">
+            <li><span class="step-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><h4>Listen</h4><p>Whisper writes down every word with its timestamp, on your own laptop. Online, ElevenLabs Scribe does the same.</p></li>
+            <li><span class="step-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v3H5zM6 7v12h12V7M9 11h6"/></svg></span><h4>File</h4><p>Gemma 4 reads the transcript and pulls out the recipe, the people, the year and the lines worth keeping word for word.</p></li>
+            <li><span class="step-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></span><h4>Ask</h4><p>Answers come only from the recordings. Tap a citation and you hear the exact second it was said.</p></li>
+          </ol>
+        </section>
 
-    <section id="view-timeline" class="view">
-      <div class="view-head"><h2>Timeline</h2><p class="muted">Ordered by when it happened, not when it was recorded.</p></div>
-      <ol id="timelineList" class="timeline"></ol>
-    </section>
-
-    <section id="view-planner" class="view">
-      <div class="view-head"><h2>Plan the next call</h2></div>
-      <p class="muted lede">Some days the stories pour out, some days they don't. TabPFN learns from your own rated sessions which times and topics lead to the recordings you treasure.</p>
-      <div id="plannerBody"></div>
-      <div class="split">
-        <div class="card">
-          <h3>Questions saved for next time</h3>
-          <form id="qForm" class="row"><input id="qInput" placeholder="Add a question to ask"><button class="primary" type="submit">Add</button></form>
-          <ul id="qList" class="qlist"></ul>
+        <div class="panels">
+          <div class="panel panel-a">
+            <div class="panel-copy"><p class="kicker">Recipe book</p><h3>A cookbook <em>in their voice</em></h3><p>Every dish they explain becomes a printable page. The QR code on it plays them telling it.</p></div>
+            <div class="panel-art"><div class="card-stack"><div class="mini-card back"></div><div class="mini-card"><b></b><i style="width:80%"></i><i style="width:60%"></i><i style="width:70%"></i><span class="mini-qr"></span></div></div></div>
+          </div>
+          <div class="panel panel-b">
+            <div class="panel-copy"><p class="kicker">Timeline</p><h3>A life, <em>in order</em></h3><p>Stories land by when they happened, not when they were recorded.</p></div>
+            <div class="panel-art"><div class="mini-timeline"><span></span><span></span><span></span><span></span></div></div>
+          </div>
+          <div class="panel panel-c">
+            <div class="panel-copy"><p class="kicker">Next call</p><h3>The best time <em>to call</em></h3><p>Rate each session. TabPFN learns which days, hours and topics bring out the good stories.</p></div>
+            <div class="panel-art"><div class="mini-heat"><span style="opacity:0.15"></span><span style="opacity:0.3"></span><span style="opacity:0.2"></span><span style="opacity:0.6"></span><span style="opacity:0.9"></span><span style="opacity:0.4"></span><span style="opacity:0.2"></span><span style="opacity:0.35"></span><span style="opacity:0.25"></span><span style="opacity:0.7"></span><span style="opacity:1"></span><span style="opacity:0.5"></span><span style="opacity:0.1"></span><span style="opacity:0.2"></span><span style="opacity:0.3"></span><span style="opacity:0.55"></span><span style="opacity:0.8"></span><span style="opacity:0.45"></span><span style="opacity:0.2"></span><span style="opacity:0.15"></span><span style="opacity:0.35"></span><span style="opacity:0.5"></span><span style="opacity:0.65"></span><span style="opacity:0.3"></span></div></div>
+          </div>
         </div>
-        <div class="card">
-          <h3>Session log</h3>
-          <p class="muted small">Every recording adds a row. Rate recordings in the Archive. Already kept a call log? Import a CSV with columns <code>date, time, duration_min, asked_by, topic, rating</code>.</p>
-          <label class="link">Import CSV<input type="file" id="csvInput" accept=".csv" hidden></label>
-          <div id="sessionTable"></div>
-        </div>
-      </div>
-    </section>
 
-    <section id="view-settings" class="view">
-      <div class="view-head"><h2>Settings</h2></div>
-      <form id="familyForm" class="card fields">
-        <label>Whose voice is this?<input id="elderName" placeholder="Their name, the way you say it"></label>
-        <label>Pronouns<select id="pronoun"><option value="she">she / her</option><option value="he">he / him</option><option value="they">they / them</option></select></label>
-        <label>Kept by<input id="familyName" placeholder="e.g. her friends from uni"></label>
-        <label>Who asks the questions (comma separated)<input id="askers" placeholder="Ada, Chidi"></label>
-        <div class="row"><button class="primary" type="submit">Save</button><span id="familySaved" class="muted small"></span></div>
-      </form>
-      <div class="card">
-        <h3>Passcode</h3>
-        <p class="muted small" id="passNote">Needed to add, rate or delete when the archive is shared publicly.</p>
-        <form id="passForm" class="row"><input id="passInput" type="password" placeholder="Passcode"><button class="primary" type="submit">Unlock</button></form>
+        <figure class="promise">
+          <blockquote>Every quote in an answer is checked against the transcript. If they never said it, it is not shown.</blockquote>
+          <figcaption>The one rule Legacy Loom never bends</figcaption>
+        </figure>
+        <ul class="stack" aria-label="Built with">
+          <li>Gemma 4</li><li>Whisper</li><li>bge-small</li><li>TabPFN</li><li>MongoDB Atlas</li><li>ElevenLabs</li>
+        </ul>
       </div>
-      <div class="card">
-        <h3>What is running</h3>
-        <table class="status-table" id="statusTable"></table>
-      </div>
+
+    <section class="cta-band">
+      <h3>Start with one voice note.</h3>
+      <p>Drop in a recording and Legacy Loom listens, files it and has answers ready. You will hear the difference the first time a citation plays their voice back.</p>
+      <div class="hero-cta"><a class="primary like-btn big" href="/app#add">Add a voice note</a><a class="ghost big" href="/faq">Questions first?</a></div>
     </section>
   </main>
 
-  <div class="player hidden" id="player">
-    <button id="playBtn" class="play" aria-label="Play or pause"></button>
-    <div class="player-main">
-      <div class="player-title"><strong id="playerTitle"></strong><span id="playerTime" class="muted"></span></div>
-      <p id="playerCaption" class="caption"></p>
-      <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek">
+  <footer class="site-foot site-foot-wide">
+    <div class="foot-brand">
+      <strong>Legacy Loom</strong>
+      <p>Keep a friend's voice. Ask it anything. Open source, built on open models.</p>
     </div>
-    <button id="closePlayer" class="link" aria-label="Close player">Close</button>
-    <audio id="audio" preload="metadata"></audio>
-  </div>
-
-  <div id="toast" class="toast"></div>
-  <script src="/static/app.js"></script>
+    <div class="foot-cols">
+      <div><h5>Product</h5><a href="/app">Open the app</a><a href="/book">Recipe book</a><a href="/#how">How it works</a></div>
+      <div><h5>Learn</h5><a href="/docs">Docs</a><a href="/faq">FAQ</a><a href="/docs#api">API</a></div>
+      <div><h5>Help</h5><a href="/support">Support</a><a href="https://github.com/angelraph/legacy-loom/issues/new">Report a problem</a><a href="https://github.com/angelraph/legacy-loom">Source code</a></div>
+    </div>
+  </footer>
+  <script>
+    (function () {
+      var b = document.getElementById("menuBtn"), l = document.getElementById("siteLinks");
+      b.addEventListener("click", function () {
+        var open = l.classList.toggle("open");
+        b.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    })();
+  </script>
 </body>
 </html>

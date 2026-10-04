@@ -36,7 +36,7 @@ def render() -> str:
     pages = []
     for r in items:
         rec = r["recipe"]
-        listen = f"{config.PUBLIC_BASE_URL}/#memo/{r['memo_id']}"
+        listen = f"{config.PUBLIC_BASE_URL}/app#memo/{r['memo_id']}"
         quote = f'<blockquote>&ldquo;{e(r["quotes"][0])}&rdquo;</blockquote>' if r["quotes"] else ""
         serves = f'<p class="serves">Serves {e(rec["serves"])}</p>' if rec.get("serves") else ""
         tips = (f"<h3>The way {pr['sub']} does it</h3><ul>" + "".join(f"<li>{e(t)}</li>" for t in rec["tips"]) + "</ul>") if rec.get("tips") else ""

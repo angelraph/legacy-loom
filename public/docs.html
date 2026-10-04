@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Docs: Legacy Loom</title>
+  <meta name="description" content="How to run, deploy and understand Legacy Loom.">
+  <meta property="og:title" content="Docs: Legacy Loom">
+  <meta property="og:description" content="How to run, deploy and understand Legacy Loom.">
+  <meta name="theme-color" content="#faf6ef">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23b5532a'/%3E%3Cpath d='M9 20c3-8 11-8 14 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M12 20c2-4.5 6-4.5 8 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css?v=4">
+</head>
+<body class="site">
+  <header class="top">
+    <div class="nav-shell">
+      <a class="brand" href="/" aria-label="Legacy Loom home">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15"/><path d="M9 20c3-8 11-8 14 0M12 20c2-4.5 6-4.5 8 0"/></svg>
+        <span class="brand-text"><strong>Legacy Loom</strong></span>
+      </a>
+      <nav class="site-links" id="siteLinks" aria-label="Site"><a href="/">Product</a><a href="/docs" class="on">Docs</a><a href="/faq">FAQ</a><a href="/support">Support</a></nav>
+      <div class="nav-actions">
+        <a class="primary like-btn" href="/app">Open the app</a>
+        <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+  <main class="doc-wrap">
+    <aside class="doc-toc"><p class="kicker">Documentation</p><a href="#overview">Overview</a><a href="#quickstart">Quickstart</a><a href="#pipeline">From voice note to memory</a><a href="#answers">How answers are made</a><a href="#planner">The call planner</a><a href="#config">Configuration</a><a href="#deploy">Deploying</a><a href="#api">API reference</a><a href="#privacy">Privacy</a><a href="#limits">Known limits</a></aside>
+    <article class="prose">
+      <p class="kicker">Docs</p>
+      <h1 class="page-title">How Legacy Loom works</h1>
+      <p class="page-lede">Everything you need to run it, deploy it, and understand why it answers the way it does.</p>
+      <section id="overview" class="doc-section"><h2>Overview</h2>
+<p>Legacy Loom keeps one person's voice notes and makes them useful. You add recordings, it writes them down with timestamps, files each one (what kind of memory it is, who is in it, when it happened, the lines worth keeping), and lets you ask questions. Answers come only from the recordings and every claim links to the second it was said.</p>
+<p>It is built so the core runs on open models. Gemma does the reading and answering, Whisper does the listening, an open embedding model does the searching. On a laptop all three run locally and the voice notes never leave it.</p>
+<div class="callout"><strong>Where things live.</strong> Memos, searchable passages, sessions and the audio itself are stored in MongoDB Atlas. The code is on <a href="https://github.com/angelraph/legacy-loom">GitHub</a> under the MIT license.</div>
+</section><section id="quickstart" class="doc-section"><h2>Quickstart</h2>
+<p>You need Python 3.11 or newer, <a href="https://ollama.com">Ollama</a> and a free MongoDB Atlas cluster.</p>
+<pre><code>ollama pull gemma3:4b
+python -m venv .venv
+.venv\Scripts\activate            # macOS or Linux: source .venv/bin/activate
+pip install -r requirements-local.txt
+copy .env.example .env            # fill in MONGODB_URI and any keys you have
+python -m scripts.setup_atlas     # creates the vector and text search indexes
+uvicorn app.main:app --port 8000</code></pre>
+<p>Open <code>http://127.0.0.1:8000/app</code>, go to Settings, enter whose voice it is, then add a recording. The first one takes a minute or two on a CPU while Whisper and Gemma load.</p>
+</section><section id="pipeline" class="doc-section"><h2>From voice note to memory</h2>
+<ol class="flow">
+<li><strong>Store.</strong> The audio goes into GridFS so it can be streamed back later with byte ranges, which is what lets the player jump straight to a cited second.</li>
+<li><strong>Listen.</strong> faster-whisper transcribes on the CPU with word timings. When it is not installed (as on a serverless host) ElevenLabs Scribe does it instead. Both return the same shape: segments, words, language, duration.</li>
+<li><strong>File.</strong> Gemma reads the transcript and returns JSON: a title, the kind of memory (story, recipe, advice, song), a summary, people, places, a year when one is said, topics, up to three exact quotes, and a recipe card when a dish is explained. If a small model marks a note as a recipe but leaves the card empty, a second focused pass asks for just the card.</li>
+<li><strong>Index.</strong> The transcript is grouped into passages of about 45 seconds that keep their timestamps. Each passage plus one English overview passage is embedded with <code>BAAI/bge-small-en-v1.5</code> and stored with its vector.</li>
+<li><strong>Log.</strong> A session row records when the recording happened, who asked, the topic, how long they spoke and how fast. The call planner learns from these rows.</li>
+</ol>
+</section><section id="answers" class="doc-section"><h2>How answers are made</h2>
+<p>Each question goes through a small agent loop:</p>
+<ol class="flow">
+<li><strong>Route.</strong> Gemma picks one or two tools: <code>search_memories</code>, <code>find_recipe</code>, <code>timeline</code> or <code>plan_calls</code>.</li>
+<li><strong>Retrieve.</strong> Search runs Atlas Vector Search and Atlas Search (keyword, with typo tolerance) side by side and merges them with reciprocal rank fusion, so a passage that ranks well in both rises to the top.</li>
+<li><strong>Answer.</strong> Gemma writes the answer from the numbered material only and cites it like <code>[2]</code>. If nothing in the archive answers the question, it says so and suggests a question to ask next time.</li>
+<li><strong>Check.</strong> Every quoted span in the answer is compared with the real transcripts. A sentence quoting words that were never said is removed before the answer is final, and the interface says so.</li>
+</ol>
+<div class="callout">The quote check exists because a small model, asked to be warm, once wrote <em>"She always said, it's a good, warming soup."</em> Nobody said that. An archive of someone's voice cannot make that mistake, so it is checked, not trusted.</div>
+</section><section id="planner" class="doc-section"><h2>The call planner</h2>
+<p>Rate recordings from one to five in the Archive. Four or five counts as a keeper. The planner gives TabPFN a small table with one row per session: hour, weekday, who asked and the topic. It learns which combinations tend to produce keepers, then scores every hour and topic for the next seven days. A second TabPFN model estimates how many minutes they will talk.</p>
+<p>It needs at least 8 rated sessions, with some keepers and some that were not. Until then it says how many more it needs. You can import an existing call log as CSV:</p>
+<pre><code>date,time,duration_min,asked_by,topic,rating
+2026-09-12,19:30,14,Ada,jollof,5</code></pre>
+</section><section id="config" class="doc-section"><h2>Configuration</h2>
+<div class="table-scroll"><table class="doc-table">
+<tr><th>Variable</th><th>What it does</th></tr>
+<tr><td><code>LLM_PROVIDER</code></td><td><code>ollama</code> runs Gemma on this machine, <code>google</code> uses Google AI Studio.</td></tr>
+<tr><td><code>OLLAMA_MODEL</code></td><td>Local model, default <code>gemma3:4b</code>.</td></tr>
+<tr><td><code>GOOGLE_API_KEY</code>, <code>GOOGLE_MODEL</code></td><td>Hosted Gemma. Default model <code>gemma-4-26b-a4b-it</code>.</td></tr>
+<tr><td><code>MONGODB_URI</code>, <code>MONGODB_DB</code></td><td>Atlas connection and database name.</td></tr>
+<tr><td><code>TRANSCRIBER</code></td><td><code>auto</code>, <code>local</code> or <code>elevenlabs</code>.</td></tr>
+<tr><td><code>WHISPER_MODEL</code>, <code>WHISPER_LANGUAGE</code></td><td>Whisper size (default <code>small</code>) and an optional forced language.</td></tr>
+<tr><td><code>ELEVENLABS_API_KEY</code>, <code>ELEVENLABS_VOICE_ID</code></td><td>Read aloud and Scribe transcription.</td></tr>
+<tr><td><code>TABPFN_TOKEN</code></td><td>Prior Labs API token for the planner.</td></tr>
+<tr><td><code>APP_PASSCODE</code></td><td>When set, adding, rating and deleting need it. Set it before sharing a link.</td></tr>
+<tr><td><code>PUBLIC_BASE_URL</code></td><td>Used for the QR codes in the recipe book.</td></tr>
+</table></div>
+</section><section id="deploy" class="doc-section"><h2>Deploying</h2>
+<h4>Vercel</h4>
+<p>The site and the API deploy from <code>vercel.json</code>. Pages are served from the CDN and the API runs as a Python function. Two things are different on serverless and the code handles both:</p>
+<ul>
+<li>A function is frozen once it replies, so an upload is transcribed and filed inside the upload request.</li>
+<li>The TabPFN client needs about 400 MB of libraries, more than fits beside the app in one function, so the planner deploys as its own small project (<code>tabpfn_api/</code>) and the main site proxies <code>/api/planner</code> to it.</li>
+</ul>
+<h4>Render</h4>
+<p><code>render.yaml</code> describes a single web service. It runs the planner in process and processes uploads in the background.</p>
+</section><section id="api" class="doc-section"><h2>API reference</h2>
+<div class="table-scroll"><table class="doc-table">
+<tr><th>Method and path</th><th>What it does</th></tr>
+<tr><td><code>GET /api/status</code></td><td>Which services are configured and reachable.</td></tr>
+<tr><td><code>GET /api/memos</code></td><td>All memos, newest first.</td></tr>
+<tr><td><code>POST /api/memos</code></td><td>Upload a recording (multipart: <code>file</code>, <code>recorded_at</code>, <code>asked_by</code>, <code>prompt_topic</code>).</td></tr>
+<tr><td><code>GET /api/memos/{id}</code></td><td>One memo with transcript segments.</td></tr>
+<tr><td><code>PATCH /api/memos/{id}</code></td><td>Rate, retitle or correct the year.</td></tr>
+<tr><td><code>GET /api/memos/{id}/audio</code></td><td>The recording, with byte range support.</td></tr>
+<tr><td><code>POST /api/ask</code></td><td>Ask a question. Streams server sent events: <code>plan</code>, <code>tool</code>, <code>sources</code>, <code>token</code>, <code>removed_quotes</code>, <code>done</code>.</td></tr>
+<tr><td><code>POST /api/tts</code></td><td>Read text aloud (MP3).</td></tr>
+<tr><td><code>GET /api/planner</code></td><td>The TabPFN forecast.</td></tr>
+<tr><td><code>POST /api/sessions/import</code></td><td>Import a call log CSV.</td></tr>
+<tr><td><code>GET /book</code></td><td>The printable recipe book.</td></tr>
+</table></div>
+<p>Anything that changes data needs the <code>x-family-key</code> header when a passcode is set.</p>
+</section><section id="privacy" class="doc-section"><h2>Privacy</h2>
+<p>On a laptop with Ollama and Whisper, transcription, filing and answering happen on the machine. Only the database is remote, and Atlas can be swapped for a local MongoDB if you want everything offline (vector search then needs Atlas or a local Atlas deployment).</p>
+<p>The hosted version sends audio to ElevenLabs for transcription and transcripts to Google AI Studio for Gemma. That trade is made for a demo anyone can open. For a real family archive, run it locally.</p>
+<p>Voice cloning is never turned on by default. Only do it with the person's clear permission.</p>
+</section><section id="limits" class="doc-section"><h2>Known limits</h2>
+<ul>
+<li>Uploads on Vercel are capped at 4 MB per file, which is still over 30 minutes of a WhatsApp voice note.</li>
+<li>Whisper handles English, Yoruba and Hausa unevenly and does not cover Igbo. Use ElevenLabs Scribe for languages it struggles with.</li>
+<li>The local 4B model is slower and less careful than the hosted 26B. The quote check catches invented quotes from either.</li>
+<li>The planner is only as good as the ratings. With fewer than 8 it does not guess.</li>
+</ul>
+</section>
+    </article>
+  </main>
+
+  <footer class="site-foot site-foot-wide">
+    <div class="foot-brand">
+      <strong>Legacy Loom</strong>
+      <p>Keep a friend's voice. Ask it anything. Open source, built on open models.</p>
+    </div>
+    <div class="foot-cols">
+      <div><h5>Product</h5><a href="/app">Open the app</a><a href="/book">Recipe book</a><a href="/#how">How it works</a></div>
+      <div><h5>Learn</h5><a href="/docs">Docs</a><a href="/faq">FAQ</a><a href="/docs#api">API</a></div>
+      <div><h5>Help</h5><a href="/support">Support</a><a href="https://github.com/angelraph/legacy-loom/issues/new">Report a problem</a><a href="https://github.com/angelraph/legacy-loom">Source code</a></div>
+    </div>
+  </footer>
+  <script>
+    (function () {
+      var b = document.getElementById("menuBtn"), l = document.getElementById("siteLinks");
+      b.addEventListener("click", function () {
+        var open = l.classList.toggle("open");
+        b.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    })();
+  </script>
+</body>
+</html>

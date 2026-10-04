@@ -96,7 +96,7 @@ async function loadFamily() {
   try { state.family = await api("/api/family"); } catch { state.family = {}; }
   state.pr = PRONOUNS[state.family.pronoun] || PRONOUNS.she;
   const name = state.family.elder_name;
-  $("#subtitle").textContent = name ? `The voice of ${name}` : "Set a name in Settings to begin";
+  $("#subtitle").textContent = name ? `The voice of ${name}` : "Voice notes, kept and searchable";
   $("#askHeading").textContent = name ? `Ask about ${name}'s life` : "Ask about their life";
   $("#askInput").placeholder = name ? `What did ${name} say about...` : "Ask a question";
   $("#recipesHeading").textContent = name ? `${name}'s kitchen` : "Recipes";
@@ -182,9 +182,11 @@ function buildSuggestions() {
   if (advice) out.add(`What advice did ${state.pr.sub} give?`);
   if (ready.length) out.add(`Tell me ${pos} life story in order`);
   if (ready.length) out.add(`When is the best time to call ${obj} this week?`);
+  const empty = state.memos.length === 0;
+  document.body.classList.toggle("empty-archive", empty);
   $("#suggestions").innerHTML = ready.length
     ? [...out].slice(0, 5).map((s) => `<button class="ghost">${esc(s)}</button>`).join("")
-    : `<p class="muted">No memories yet. <a href="#add">Add the first recording</a> and come back with a question.</p>`;
+    : `<div class="empty-start"><p>The archive is empty. Add a voice note and Legacy Loom will listen, file it and have answers ready.</p><a class="primary like-btn" href="#add">Add the first voice note</a></div>`;
 }
 $("#suggestions").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) ask(b.textContent); });
 
@@ -311,16 +313,21 @@ function stars(m) {
 }
 
 function memoCard(m) {
-  const when = m.recorded_at ? new Date(m.recorded_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "";
+  const d = m.recorded_at ? new Date(m.recorded_at) : null;
+  const when = d ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
   const busy = m.status !== "ready";
+  const date = d ? `<div class="date" aria-hidden="true"><b>${d.getDate()}</b><span>${d.toLocaleDateString([], { month: "short" })}</span><span>${d.toLocaleDateString([], { weekday: "short" })}</span></div>` : `<div class="date"></div>`;
   return `<article class="memo" data-id="${m._id}">
-    <button class="play" data-play="${m._id}" data-start="0" aria-label="Play"></button>
+    ${date}
     <div class="open" data-open="${m._id}">
       <h3>${esc(m.title)}</h3>
       <div class="meta"><span class="badge ${esc(m.kind || "")}">${esc(m.kind || "new")}</span><span>${esc(when)}</span>${m.duration ? `<span>${fmt(m.duration)}</span>` : ""}${m.asked_by ? `<span>asked by ${esc(m.asked_by)}</span>` : ""}${m.year ? `<span>${m.year}</span>` : m.era ? `<span>${esc(m.era)}</span>` : ""}</div>
       ${busy ? `<div class="progress">${m.status === "error" ? `<span class="error">Failed: ${esc(m.error || "")}</span>` : `<span class="spinner"></span>${esc(STAGES[m.status] || m.status)}`}</div>` : `<p class="summary">${esc(m.summary)}</p>`}
     </div>
-    ${busy ? "" : stars(m)}
+    <div class="memo-side">
+      <button class="play" data-play="${m._id}" data-start="0" aria-label="Play ${esc(m.title)}"></button>
+      ${busy ? "" : stars(m)}
+    </div>
   </article>`;
 }
 

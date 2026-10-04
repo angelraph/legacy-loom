@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from . import agent, book, config, embed, ingest, llm, planner, store, transcribe, voice
 
 logging.basicConfig(level=logging.INFO)
-app = FastAPI(title="Legacy Loom")
+app = FastAPI(title="Legacy Loom", docs_url=None, redoc_url=None, openapi_url="/api/openapi.json")
 WEB = config.ROOT / "public"
 if (WEB / "static").is_dir():  # on Vercel the CDN serves public/ and it is not in the function
     app.mount("/static", StaticFiles(directory=WEB / "static"), name="static")
@@ -48,9 +48,16 @@ async def store_error(_: Request, exc: store.StoreError):
     return Response(json.dumps({"detail": str(exc)}), status_code=503, media_type="application/json")
 
 
-@app.get("/", response_class=HTMLResponse)
-def index():
-    return FileResponse(WEB / "index.html")
+PAGES = {"/": "index.html", "/app": "app.html", "/docs": "docs.html", "/faq": "faq.html", "/support": "support.html"}
+
+
+def _page(name: str):
+    return lambda: FileResponse(WEB / name)
+
+
+# Locally FastAPI serves the pages; on Vercel the CDN does (see vercel.json).
+for _path, _name in PAGES.items():
+    app.add_api_route(_path, _page(_name), methods=["GET"], response_class=HTMLResponse, include_in_schema=False)
 
 
 @app.get("/api/status")

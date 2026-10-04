@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Support: Legacy Loom</title>
+  <meta name="description" content="Live status, fixes for common problems, and how to get help.">
+  <meta property="og:title" content="Support: Legacy Loom">
+  <meta property="og:description" content="Live status, fixes for common problems, and how to get help.">
+  <meta name="theme-color" content="#faf6ef">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23b5532a'/%3E%3Cpath d='M9 20c3-8 11-8 14 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M12 20c2-4.5 6-4.5 8 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css?v=4">
+</head>
+<body class="site">
+  <header class="top">
+    <div class="nav-shell">
+      <a class="brand" href="/" aria-label="Legacy Loom home">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15"/><path d="M9 20c3-8 11-8 14 0M12 20c2-4.5 6-4.5 8 0"/></svg>
+        <span class="brand-text"><strong>Legacy Loom</strong></span>
+      </a>
+      <nav class="site-links" id="siteLinks" aria-label="Site"><a href="/">Product</a><a href="/docs">Docs</a><a href="/faq">FAQ</a><a href="/support" class="on">Support</a></nav>
+      <div class="nav-actions">
+        <a class="primary like-btn" href="/app">Open the app</a>
+        <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+  <main class="narrow">
+    <p class="kicker">Support</p>
+    <h1 class="page-title">Something not right? <em>Let's fix it.</em></h1>
+    <p class="page-lede">Start with the live check below. It asks the server which services are up right now.</p>
+
+    <section class="card status-card">
+      <div class="row" style="justify-content:space-between"><h3>Live status</h3><button class="ghost" id="recheck">Check again</button></div>
+      <ul class="status-list" id="statusList"><li><span class="spinner"></span> Checking</li></ul>
+    </section>
+
+    <h2 class="sub-title">Common problems</h2>
+    <div class="faq"><details class="faq-item"><summary>An upload says it failed</summary><p>Open the recording in the Archive and read the error. If it mentions transcription, the file may be silent or in an unusual format: convert it to mp3 or m4a and try again. On the hosted version files must be under 4 MB.</p></details><details class="faq-item"><summary>The answer says they never talked about it</summary><p>That is the archive being honest. Search found nothing that answers the question. Try different words (a dish name, a person, a place), or save the suggested question and ask it on the next call.</p></details><details class="faq-item"><summary>An answer showed "Removed 1 quote"</summary><p>Gemma wrote a quote that is not in any transcript, so Legacy Loom took that sentence out. The rest of the answer is still grounded in the recordings. Nothing for you to fix.</p></details><details class="faq-item"><summary>The call planner will not show a forecast</summary><p>It needs at least 8 rated recordings, with some rated 4 or 5 and some lower. Rate recordings in the Archive, or import a call log CSV on the Next call page.</p></details><details class="faq-item"><summary>I cannot add or rate anything</summary><p>The archive is read only without the passcode. Enter it in Settings in the app. It is saved on that device only.</p></details><details class="faq-item"><summary>Running locally: Gemma shows as offline</summary><p>Ollama is not running. Start the Ollama app (or run ollama serve) and check that gemma3:4b appears in ollama list.</p></details><details class="faq-item"><summary>Running locally: Atlas will not connect</summary><p>In Atlas, open Security, then Network Access, and add your IP address or 0.0.0.0/0. An SSL handshake error almost always means the IP is not allowed yet.</p></details></div>
+
+    <div class="support-grid">
+      <a class="support-card" href="https://github.com/angelraph/legacy-loom/issues/new"><h3>Report a problem</h3><p>Open an issue on GitHub. Say what you did, what you expected and what happened. A screenshot helps.</p><span>Open an issue &rarr;</span></a>
+      <a class="support-card" href="https://github.com/angelraph/legacy-loom/issues/new?title=Wrong%20answer"><h3>Report a wrong answer</h3><p>Include the question, the answer and the citation it gave. Wrong answers are the bugs we care about most.</p><span>Report it &rarr;</span></a>
+      <a class="support-card" href="/docs"><h3>Read the docs</h3><p>Setup, configuration, the API and how answers are checked.</p><span>Go to docs &rarr;</span></a>
+    </div>
+  </main>
+
+  <footer class="site-foot site-foot-wide">
+    <div class="foot-brand">
+      <strong>Legacy Loom</strong>
+      <p>Keep a friend's voice. Ask it anything. Open source, built on open models.</p>
+    </div>
+    <div class="foot-cols">
+      <div><h5>Product</h5><a href="/app">Open the app</a><a href="/book">Recipe book</a><a href="/#how">How it works</a></div>
+      <div><h5>Learn</h5><a href="/docs">Docs</a><a href="/faq">FAQ</a><a href="/docs#api">API</a></div>
+      <div><h5>Help</h5><a href="/support">Support</a><a href="https://github.com/angelraph/legacy-loom/issues/new">Report a problem</a><a href="https://github.com/angelraph/legacy-loom">Source code</a></div>
+    </div>
+  </footer>
+  <script>
+    (function () {
+      var b = document.getElementById("menuBtn"), l = document.getElementById("siteLinks");
+      b.addEventListener("click", function () {
+        var open = l.classList.toggle("open");
+        b.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    })();
+  </script>
+  <script>
+    (function () {
+      var names = { gemma: "Gemma", atlas: "MongoDB Atlas", transcriber: "Transcription", tabpfn: "TabPFN planner", elevenlabs: "ElevenLabs voice" };
+      function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+      function check() {
+        var list = document.getElementById("statusList");
+        list.innerHTML = '<li><span class="spinner"></span> Checking</li>';
+        fetch("/api/status").then(function (r) { return r.json(); }).then(function (s) {
+          list.innerHTML = Object.keys(names).map(function (k) {
+            var v = s[k] || {}, ok = !!v.ok, detail = v.detail || "";
+            if (k === "atlas" && ok) { ok = !!v.search_ready; detail = ok ? "connected, search indexes ready" : "connected, search indexes building"; }
+            if (k === "gemma" && v.model) detail = v.model + ": " + detail;
+            return '<li><span class="dot ' + (ok ? "ok" : "bad") + '"></span><strong>' + names[k] + '</strong><span class="muted">' + esc(detail) + '</span></li>';
+          }).join("");
+        }).catch(function () { list.innerHTML = '<li><span class="dot bad"></span><strong>Server</strong><span class="muted">unreachable right now</span></li>'; });
+      }
+      document.getElementById("recheck").addEventListener("click", check);
+      check();
+    })();
+  </script>
+</body>
+</html>
