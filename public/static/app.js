@@ -142,7 +142,7 @@ async function loadFamily() {
   state.pr = PRONOUNS[state.family.pronoun] || PRONOUNS.she;
   const name = state.family.elder_name;
   $("#subtitle").textContent = name ? `The voice of ${name}` : state.space === "try" ? "Sandbox: try it with your own voice" : "Voice notes, kept and searchable";
-  $("#askHeading").textContent = name ? `Ask about ${name}'s life` : "Ask about their life";
+  $("#askHeading").textContent = name ? `Ask about ${name}'s life` : state.space === "try" ? "Ask your own voice notes" : "Ask about their life";
   $("#askInput").placeholder = name ? `What did ${name} say about...` : "Ask a question";
   $("#recipesHeading").textContent = name ? `${name}'s kitchen` : "Recipes";
   $("#askerList").innerHTML = (state.family.askers || []).map((a) => `<option value="${esc(a)}">`).join("");

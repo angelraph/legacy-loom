@@ -694,3 +694,11 @@ body.locked #view-add .add-grid, body.locked #uploadForm, body.locked #uploadLog
   .space-switch button { flex: 1; padding: 9px 8px; }
   .space-note { min-width: 0; font-size: 13.5px; }
 }
+
+/* Space switch in the serif voice of the headlines */
+.space-switch button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 16px var(--serif); letter-spacing: -.01em; padding: 8px 18px; }
+.space-switch button em { font-style: italic; font-weight: 400; color: var(--highlight); }
+.space-switch button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
+.space-switch button.on svg { opacity: 1; }
+body.space-try .space-switch button.on em { color: #fff3e2; }
+.space-note { font-size: 14.5px; line-height: 1.5; }
