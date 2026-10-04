@@ -111,7 +111,7 @@ uvicorn app.main:app --port 8000</code></pre>
 <tr><td><code>POST /api/sessions/import</code></td><td>Import a call log CSV.</td></tr>
 <tr><td><code>GET /book</code></td><td>The printable recipe book.</td></tr>
 </table></div>
-<p>Anything that changes data needs the <code>x-family-key</code> header when a passcode is set.</p>
+<p>Every call can carry an <code>x-space</code> header: <code>main</code> for the archive, <code>try</code> for the open sandbox. In <code>main</code>, anything that changes data needs the <code>x-family-key</code> header when a passcode is set. <code>GET /api/access</code> tells you whether you can write.</p>
 </section><section id="privacy" class="doc-section"><h2>Privacy</h2>
 <p>On a laptop with Ollama and Whisper, transcription, filing and answering happen on the machine. Only the database is remote, and Atlas can be swapped for a local MongoDB if you want everything offline (vector search then needs Atlas or a local Atlas deployment).</p>
 <p>The hosted version sends audio to ElevenLabs for transcription and transcripts to Google AI Studio for Gemma. That trade is made for a demo anyone can open. For a real family archive, run it locally.</p>
