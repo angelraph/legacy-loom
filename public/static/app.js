@@ -6,7 +6,8 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const fmt = (sec) => { sec = Math.max(0, Math.floor(sec || 0)); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`; };
 const STAGES = { queued: "Waiting", transcribing: "Listening", reading: "Gemma is reading", indexing: "Filing it away", error: "Failed" };
 
-const state = { family: {}, memos: [], history: [], memoCache: {}, statusData: null, pr: { sub: "she", obj: "her", pos: "her" } };
+const state = { family: {}, memos: [], history: [], memoCache: {}, statusData: null, pr: { sub: "she", obj: "her", pos: "her" },
+  space: "main", canWrite: false };
 const PRONOUNS = { she: { sub: "she", obj: "her", pos: "her" }, he: { sub: "he", obj: "him", pos: "his" }, they: { sub: "they", obj: "them", pos: "their" } };
 
 function passKey() { try { return localStorage.getItem("ll-pass") || ""; } catch { return ""; } }
@@ -15,6 +16,7 @@ function setPassKey(v) { try { localStorage.setItem("ll-pass", v); } catch {} }
 async function api(path, opts = {}) {
   const headers = { ...(opts.headers || {}) };
   if (passKey()) headers["x-family-key"] = passKey();
+  headers["x-space"] = state.space;
   if (opts.json !== undefined) { headers["content-type"] = "application/json"; opts.body = JSON.stringify(opts.json); }
   const res = await fetch(path, { ...opts, headers });
   if (!res.ok) {
@@ -30,6 +32,49 @@ function toast(msg) {
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
   clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove("show"), 3200);
 }
+
+// Spaces: the friend's archive, or an open sandbox anyone can try
+
+function initialSpace() {
+  const fromUrl = new URLSearchParams(location.search).get("space");
+  if (fromUrl === "try" || fromUrl === "main") return fromUrl;
+  try { return localStorage.getItem("ll-space") === "try" ? "try" : "main"; } catch { return "main"; }
+}
+
+function applySpace() {
+  $$("#spaceBar [data-space]").forEach((b) => b.classList.toggle("on", b.dataset.space === state.space));
+  document.body.classList.toggle("space-try", state.space === "try");
+  $$(".book-link").forEach((a) => { a.href = state.space === "try" ? "/book?space=try" : "/book"; });
+  const url = new URL(location.href);
+  if (state.space === "try") url.searchParams.set("space", "try"); else url.searchParams.delete("space");
+  history.replaceState(null, "", url);
+  try { localStorage.setItem("ll-space", state.space); } catch {}
+}
+
+async function checkAccess() {
+  try { state.canWrite = (await api("/api/access")).can_write; } catch { state.canWrite = false; }
+  document.body.classList.toggle("locked", !state.canWrite);
+  const hours = state.statusData?.try_hours || 24;
+  const name = state.family.elder_name;
+  $("#spaceNote").innerHTML = state.space === "try"
+    ? `Sandbox. Add your own voice notes here, no passcode needed. Anything added is visible to other visitors and clears after ${hours} hours.`
+    : state.canWrite
+      ? `${name ? `${esc(name)}'s archive` : "The archive"}, unlocked on this device. Changes here are permanent.`
+      : `You are looking at ${name ? `${esc(name)}'s` : "their"} archive. Listen and ask freely. To add voice notes of your own, <button class="link inline" data-go-try>try it yourself</button>.`;
+}
+
+async function switchSpace(space, view) {
+  if (space === state.space) { if (view) show(view); return; }
+  state.space = space; state.history = []; state.memoCache = {};
+  $("#thread").innerHTML = ""; $("#askIntro").classList.remove("hidden");
+  audio.pause(); $("#player").classList.add("hidden"); document.body.classList.remove("player-open");
+  applySpace();
+  await loadFamily(); await refreshMemos(); await checkAccess();
+  if (view) { history.replaceState(null, "", `${location.pathname}${location.search}#${view}`); show(view); } else route();
+}
+
+$("#spaceBar").addEventListener("click", (e) => { const b = e.target.closest("[data-space]"); if (b) switchSpace(b.dataset.space); });
+document.addEventListener("click", (e) => { if (e.target.closest("[data-go-try]")) switchSpace("try", "add"); });
 
 // Navigation
 
@@ -96,7 +141,7 @@ async function loadFamily() {
   try { state.family = await api("/api/family"); } catch { state.family = {}; }
   state.pr = PRONOUNS[state.family.pronoun] || PRONOUNS.she;
   const name = state.family.elder_name;
-  $("#subtitle").textContent = name ? `The voice of ${name}` : "Voice notes, kept and searchable";
+  $("#subtitle").textContent = name ? `The voice of ${name}` : state.space === "try" ? "Sandbox: try it with your own voice" : "Voice notes, kept and searchable";
   $("#askHeading").textContent = name ? `Ask about ${name}'s life` : "Ask about their life";
   $("#askInput").placeholder = name ? `What did ${name} say about...` : "Ask a question";
   $("#recipesHeading").textContent = name ? `${name}'s kitchen` : "Recipes";
@@ -125,7 +170,7 @@ $("#familyForm").addEventListener("submit", async (e) => {
 $("#passForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   setPassKey($("#passInput").value);
-  try { await api("/api/auth/check", { method: "POST" }); toast("Unlocked on this device"); $("#passInput").value = ""; }
+  try { await api("/api/auth/check", { method: "POST" }); toast("Unlocked on this device"); $("#passInput").value = ""; checkAccess(); }
   catch { setPassKey(""); toast("That passcode did not work"); }
 });
 
@@ -186,7 +231,7 @@ function buildSuggestions() {
   document.body.classList.toggle("empty-archive", empty);
   $("#suggestions").innerHTML = ready.length
     ? [...out].slice(0, 5).map((s) => `<button class="ghost">${esc(s)}</button>`).join("")
-    : `<div class="empty-start"><p>The archive is empty. Add a voice note and Legacy Loom will listen, file it and have answers ready.</p><a class="primary like-btn" href="#add">Add the first voice note</a><a class="app-help" href="/guide">New here? Read the five minute guide</a></div>`;
+    : `<div class="empty-start"><p>${state.space === "try" ? "The sandbox is empty right now. Record yourself or upload any voice note, then come back and ask it questions." : "The archive is empty. Add a voice note and Legacy Loom will listen, file it and have answers ready."}</p><a class="primary like-btn" href="#add">Add the first voice note</a><a class="app-help" href="/guide">New here? Read the five minute guide</a></div>`;
 }
 $("#suggestions").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) ask(b.textContent); });
 
@@ -210,7 +255,7 @@ async function ask(question) {
   let text = "", sources = [];
   const steps = $(".steps", a), body = $(".body", a);
   try {
-    const res = await fetch("/api/ask", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question, history: state.history }) });
+    const res = await fetch("/api/ask", { method: "POST", headers: { "content-type": "application/json", "x-space": state.space }, body: JSON.stringify({ question, history: state.history }) });
     if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
     const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = "";
     for (;;) {
@@ -553,8 +598,11 @@ $("#csvInput").addEventListener("change", async (e) => {
 // Boot
 
 (async function boot() {
-  loadStatus();
+  state.space = initialSpace();
+  applySpace();
+  await loadStatus();
   await loadFamily();
   await refreshMemos();
+  await checkAccess();
   route();
 })();

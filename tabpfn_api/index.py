@@ -17,8 +17,8 @@ app = FastAPI(title="Legacy Loom planner")
 
 
 @app.get("/api/planner")
-def plan(asked_by: str | None = None):
+def plan(asked_by: str | None = None, space: str | None = None):
     try:
-        return planner.plan(store.list_sessions(), asked_by=asked_by)
+        return planner.plan(store.list_sessions(store.clean_space(space)), asked_by=asked_by)
     except Exception as e:
         raise HTTPException(502, f"TabPFN call failed: {e}")

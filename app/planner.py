@@ -36,7 +36,7 @@ def _client_installed() -> bool:
         return False
 
 
-def forecast(asked_by: str | None = None) -> dict:
+def forecast(asked_by: str | None = None, space: str = "main") -> dict:
     """Run the planner here, or on Vercel ask the separate planner function that carries TabPFN.
 
     The TabPFN client brings about 400 MB of scientific libraries, more than fits next to the
@@ -44,9 +44,9 @@ def forecast(asked_by: str | None = None) -> dict:
     """
     from . import store
     if not (config.SERVERLESS and not _client_installed()):
-        return plan(store.list_sessions(), asked_by=asked_by)
+        return plan(store.list_sessions(space), asked_by=asked_by)
     import httpx
-    r = httpx.get(config.PLANNER_URL or f"{config.PUBLIC_BASE_URL}/api/planner", params={"asked_by": asked_by} if asked_by else None, timeout=200)
+    r = httpx.get(config.PLANNER_URL or f"{config.PUBLIC_BASE_URL}/api/planner", params={k: v for k, v in {"asked_by": asked_by, "space": space}.items() if v}, timeout=200)
     r.raise_for_status()
     return r.json()
 

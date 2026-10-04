@@ -58,13 +58,14 @@ def _fmt_time(sec: float) -> str:
     return f"{sec // 60}:{sec % 60:02d}"
 
 
-def run_tool(call: dict, question: str) -> dict:
+def run_tool(call: dict, question: str, space: str = store.MAIN) -> dict:
     tool, query = call["tool"], (call.get("query") or question).strip()
     if tool in ("search_memories", "find_recipe"):
         kind = "recipe" if tool == "find_recipe" else None
-        res = store.hybrid_search(query, embed.embed_query(query), k=6, kind=kind)
+        vec = embed.embed_query(query)
+        res = store.hybrid_search(query, vec, k=6, kind=kind, space=space)
         if kind and not res["hits"]:
-            res = store.hybrid_search(query, embed.embed_query(query), k=6)
+            res = store.hybrid_search(query, vec, k=6, space=space)
         sources = [{"memo_id": h["memo_id"], "title": h["title"], "start": h["start"], "end": h["end"],
                     "text": h["text"], "overview": bool(h.get("overview")), "via": h["via"]} for h in res["hits"]]
         recipes = []
@@ -76,13 +77,13 @@ def run_tool(call: dict, question: str) -> dict:
                     recipes.append({"memo_id": mid, "title": m["title"], "recipe": m["recipe"]})
         return {"tool": tool, "query": query, "sources": sources, "recipes": recipes, "modes": res["modes"]}
     if tool == "timeline":
-        memos = [m for m in store.list_memos() if m.get("status") == "ready"]
+        memos = [m for m in store.list_memos(space) if m.get("status") == "ready"]
         memos.sort(key=lambda m: (m.get("year") is None, m.get("year") or 0))
         return {"tool": tool, "query": query, "timeline": [
             {"memo_id": str(m["_id"]), "title": m["title"], "year": m.get("year"), "era": m.get("era"),
              "summary": m.get("summary", "")} for m in memos]}
     if tool == "plan_calls":
-        return {"tool": tool, "query": query, "plan": planner.forecast()}
+        return {"tool": tool, "query": query, "plan": planner.forecast(space=space)}
     return {"tool": tool, "query": query}
 
 
@@ -167,8 +168,8 @@ def verify_quotes(text: str, sources: list[dict]) -> tuple[str, list[str]]:
     return text, removed
 
 
-def answer(question: str, history: list[dict]) -> Iterator[dict]:
-    fam = store.get_family()
+def answer(question: str, history: list[dict], space: str = store.MAIN) -> Iterator[dict]:
+    fam = store.get_family(space)
     elder = fam.get("elder_name") or "them"
     family = fam.get("family_name") or "the people who love them"
     pr = store.pronouns(fam)
@@ -177,7 +178,7 @@ def answer(question: str, history: list[dict]) -> Iterator[dict]:
     yield {"type": "plan", "calls": calls}
     results = []
     for c in calls:
-        r = run_tool(c, question)
+        r = run_tool(c, question, space)
         results.append(r)
         yield {"type": "tool", "tool": r["tool"], "query": r["query"], "modes": r.get("modes"),
                "plan": r.get("plan"), "recipes": r.get("recipes")}

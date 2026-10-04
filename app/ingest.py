@@ -42,7 +42,8 @@ def _process(memo_id: ObjectId) -> None:
         if not heard["text"]:
             raise RuntimeError("No speech was found in this recording.")
 
-        fam = store.get_family()
+        space = memo.get("space", store.MAIN)
+        fam = store.get_family(space)
         info = extract.extract(heard["text"], fam.get("elder_name") or "the speaker", store.pronouns(fam))
         _set(memo_id, status="indexing", **info)
 
@@ -52,7 +53,7 @@ def _process(memo_id: ObjectId) -> None:
         if overview:
             passages.insert(0, {"start": 0.0, "end": heard["duration"], "text": overview, "overview": True})
         vectors = embed.embed([f"{info['title']}\n{p['text']}" for p in passages])
-        store.replace_chunks(memo_id, info["title"], info["kind"], passages, vectors)
+        store.replace_chunks(memo_id, info["title"], info["kind"], passages, vectors, space)
 
         when = memo["recorded_at"]
         store.upsert_session_for_memo(memo_id, {
@@ -61,7 +62,7 @@ def _process(memo_id: ObjectId) -> None:
             "wpm": heard["speech"]["wpm"], "pause_ratio": heard["speech"]["pause_ratio"],
             "asked_by": memo.get("asked_by") or "unknown",
             "topic": (memo.get("prompt_topic") or (info["topics"][0] if info["topics"] else "general")).lower(),
-            "rating": memo.get("rating"),
+            "rating": memo.get("rating"), "space": space,
         })
         _set(memo_id, status="ready")
     except Exception as e:  # surface every failure on the memo card instead of hiding it

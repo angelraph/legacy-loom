@@ -673,3 +673,24 @@ pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
   .guide-n { width: 38px; height: 38px; font-size: 16px; }
   .tabs-explained li { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* Space switcher: the friend's archive or the open sandbox */
+.space-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0 0 8px; }
+.space-switch { display: inline-flex; padding: 4px; border-radius: 999px; background: var(--paper-2); border: 1px solid var(--rule); flex: none; }
+.space-switch button { border: 0; background: none; cursor: pointer; padding: 7px 16px; border-radius: 999px; font: 600 14px var(--sans); color: var(--ink-2); transition: background .15s, color .15s; }
+.space-switch button.on { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
+body.space-try .space-switch button.on { background: var(--accent-2); color: #fff; }
+.space-note { margin: 0; font-size: 14px; color: var(--ink-2); flex: 1; min-width: 220px; }
+.link.inline { padding: 0; font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+body.space-try .space-note { color: var(--sky-ink); }
+body.space-try .nav-shell { border-color: color-mix(in srgb, var(--accent-2) 45%, var(--rule)); }
+.lock-card { display: none; text-align: center; padding: 36px 24px; background: var(--accent-soft); border-color: transparent; }
+.lock-card p { max-width: 460px; margin: 8px auto 18px; }
+body.locked .lock-card { display: block; }
+body.locked #view-add .add-grid, body.locked #uploadForm, body.locked #uploadLog { display: none; }
+@media (max-width: 720px) {
+  .space-bar { gap: 8px; }
+  .space-switch { width: 100%; }
+  .space-switch button { flex: 1; padding: 9px 8px; }
+  .space-note { min-width: 0; font-size: 13.5px; }
+}

@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css?v=7">
+  <link rel="stylesheet" href="/static/styles.css?v=8">
 </head>
 <body>
   <header class="top">
@@ -37,6 +37,14 @@
   </header>
 
   <main>
+    <div class="space-bar" id="spaceBar">
+      <div class="space-switch" role="tablist" aria-label="Which archive">
+        <button data-space="main" class="on" role="tab">Their archive</button>
+        <button data-space="try" role="tab">Try it yourself</button>
+      </div>
+      <p class="space-note" id="spaceNote"></p>
+    </div>
+
     <section id="view-ask" class="view active">
       <div class="ask-intro" id="askIntro">
         <h2 id="askHeading">Ask about their life</h2>
@@ -65,6 +73,11 @@
 
     <section id="view-add" class="view">
       <div class="view-head"><h2>Add a memory</h2></div>
+      <div class="card lock-card" id="addLocked">
+        <h3>This archive is protected</h3>
+        <p class="muted">Only the people who keep it can add voice notes here. You can still try everything with your own voice in the sandbox: record, ask, rate and print.</p>
+        <button class="primary" data-go-try>Try it with your own voice</button>
+      </div>
       <div class="add-grid">
         <div class="card">
           <h3>Record now</h3>
@@ -97,7 +110,7 @@
     <section id="view-recipes" class="view">
       <div class="view-head">
         <h2 id="recipesHeading">Recipes</h2>
-        <a class="primary like-btn" href="/book" target="_blank" rel="noopener">Open the printable book</a>
+        <a class="primary like-btn book-link" href="/book" target="_blank" rel="noopener">Open the printable book</a>
       </div>
       <div id="recipeGrid" class="recipe-grid"></div>
     </section>
@@ -149,7 +162,7 @@
 
   <footer class="site-foot">
     <p>Legacy Loom is open source. Gemma and Whisper can run on a laptop, so the voice notes never have to leave it.</p>
-    <p><a href="https://github.com/angelraph/legacy-loom" target="_blank" rel="noopener">Code on GitHub</a> &middot; <a href="/book" target="_blank" rel="noopener">The recipe book</a></p>
+    <p><a href="https://github.com/angelraph/legacy-loom" target="_blank" rel="noopener">Code on GitHub</a> &middot; <a class="book-link" href="/book" target="_blank" rel="noopener">The recipe book</a></p>
   </footer>
 
   <div class="player hidden" id="player">
@@ -164,6 +177,6 @@
   </div>
 
   <div id="toast" class="toast"></div>
-  <script src="/static/app.js?v=4"></script>
+  <script src="/static/app.js?v=5"></script>
 </body>
 </html>

@@ -16,9 +16,9 @@ def _qr_svg(url: str) -> str:
     return svg[svg.find("<svg"):]
 
 
-def recipes() -> list[dict]:
+def recipes(space: str = store.MAIN) -> list[dict]:
     out = []
-    for m in store.db().memos.find({"status": "ready", "recipe": {"$ne": None}}, {"words": 0, "segments": 0}):
+    for m in store.db().memos.find({"space": space, "status": "ready", "recipe": {"$ne": None}}, {"words": 0, "segments": 0}):
         out.append({"memo_id": str(m["_id"]), "title": m["title"], "recipe": m["recipe"],
                     "quotes": m.get("quotes", []), "summary": m.get("summary", ""),
                     "duration": m.get("duration"), "audio_id": str(m["audio_id"])})
@@ -26,17 +26,17 @@ def recipes() -> list[dict]:
     return out
 
 
-def render() -> str:
-    fam = store.get_family()
+def render(space: str = store.MAIN) -> str:
+    fam = store.get_family(space)
     elder = html.escape(fam.get("elder_name") or "Our cook")
     family = html.escape(fam.get("family_name") or "the people who love them")
     pr = store.pronouns(fam)
-    items = recipes()
+    items = recipes(space)
     e = html.escape
     pages = []
     for r in items:
         rec = r["recipe"]
-        listen = f"{config.PUBLIC_BASE_URL}/app#memo/{r['memo_id']}"
+        listen = f"{config.PUBLIC_BASE_URL}/app{'?space=try' if space == store.TRY else ''}#memo/{r['memo_id']}"
         quote = f'<blockquote>&ldquo;{e(r["quotes"][0])}&rdquo;</blockquote>' if r["quotes"] else ""
         serves = f'<p class="serves">Serves {e(rec["serves"])}</p>' if rec.get("serves") else ""
         tips = (f"<h3>The way {pr['sub']} does it</h3><ul>" + "".join(f"<li>{e(t)}</li>" for t in rec["tips"]) + "</ul>") if rec.get("tips") else ""
