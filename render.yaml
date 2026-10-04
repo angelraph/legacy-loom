@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: legacy-loom
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/family
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.2
+      - key: LLM_PROVIDER
+        value: google
+      - key: GOOGLE_MODEL
+        value: gemma-4-26b-a4b-it
+      - key: TRANSCRIBER
+        value: elevenlabs
+      - key: MONGODB_DB
+        value: legacyloom
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: TABPFN_TOKEN
+        sync: false
+      - key: APP_PASSCODE
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false

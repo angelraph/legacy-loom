@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Legacy Loom</title>
+  <meta name="description" content="A private archive of one person's voice notes, powered by open models.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%239a4a22'/%3E%3Cpath d='M9 20c3-8 11-8 14 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M12 20c2-4.5 6-4.5 8 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15"/><path d="M9 20c3-8 11-8 14 0M12 20c2-4.5 6-4.5 8 0"/></svg>
+      <div>
+        <h1>Legacy Loom</h1>
+        <p id="subtitle">An archive of one voice</p>
+      </div>
+    </div>
+    <button id="statusBtn" class="status-pill" title="Service status">
+      <span class="dot" id="statusDot"></span><span id="statusText">Checking</span>
+    </button>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-view="ask" class="active">Ask</button>
+    <button data-view="archive">Archive</button>
+    <button data-view="add">Add a memory</button>
+    <button data-view="recipes">Recipes</button>
+    <button data-view="timeline">Timeline</button>
+    <button data-view="planner">Next call</button>
+    <button data-view="settings">Settings</button>
+  </nav>
+
+  <main>
+    <section id="view-ask" class="view active">
+      <div class="ask-intro" id="askIntro">
+        <h2 id="askHeading">Ask about their life</h2>
+        <p class="muted">Answers come only from the recordings, with a link to the exact second it was said.</p>
+        <div class="chips" id="suggestions"></div>
+      </div>
+      <div id="thread" class="thread"></div>
+      <form id="askForm" class="ask-form">
+        <input id="askInput" autocomplete="off" placeholder="What did she say about..." maxlength="500">
+        <button type="submit" class="primary" id="askBtn">Ask</button>
+      </form>
+    </section>
+
+    <section id="view-archive" class="view">
+      <div class="view-head">
+        <h2>Archive</h2>
+        <p class="muted" id="archiveCount"></p>
+      </div>
+      <div id="memoList" class="memo-list"></div>
+    </section>
+
+    <section id="view-memo" class="view">
+      <button class="link back" data-back>Back to the archive</button>
+      <div id="memoDetail"></div>
+    </section>
+
+    <section id="view-add" class="view">
+      <div class="view-head"><h2>Add a memory</h2></div>
+      <div class="add-grid">
+        <div class="card">
+          <h3>Record now</h3>
+          <p class="muted">Sit with them, press record, and ask one good question.</p>
+          <button id="recBtn" class="rec"><span></span>Start recording</button>
+          <p id="recTime" class="rec-time"></p>
+        </div>
+        <label class="card drop" id="drop">
+          <h3>Or upload voice notes</h3>
+          <p class="muted">WhatsApp voice notes, phone memos, mp3, m4a, ogg, wav. Several at once is fine.</p>
+          <input type="file" id="fileInput" accept="audio/*,.opus,.ogg,.m4a,.amr,.webm" multiple>
+          <span class="primary like-btn">Choose files</span>
+        </label>
+      </div>
+      <form id="uploadForm" class="card upload-form hidden">
+        <h3>About this recording</h3>
+        <div id="pendingFiles" class="pending"></div>
+        <div class="fields">
+          <label>When was it recorded?<input type="datetime-local" id="recordedAt" required></label>
+          <label>Who was asking?<input id="askedBy" list="askerList" placeholder="Your name"></label>
+          <datalist id="askerList"></datalist>
+          <label>What did you ask about?<input id="promptTopic" placeholder="e.g. her wedding, egusi soup"></label>
+        </div>
+        <p class="muted small">The time matters: the call planner learns from when recordings happen.</p>
+        <div class="row"><button class="primary" type="submit">Save to the archive</button><button type="button" class="link" id="cancelUpload">Cancel</button></div>
+      </form>
+      <div id="uploadLog" class="upload-log"></div>
+    </section>
+
+    <section id="view-recipes" class="view">
+      <div class="view-head">
+        <h2 id="recipesHeading">Recipes</h2>
+        <a class="primary like-btn" href="/book" target="_blank" rel="noopener">Open the printable book</a>
+      </div>
+      <div id="recipeGrid" class="recipe-grid"></div>
+    </section>
+
+    <section id="view-timeline" class="view">
+      <div class="view-head"><h2>Timeline</h2><p class="muted">Ordered by when it happened, not when it was recorded.</p></div>
+      <ol id="timelineList" class="timeline"></ol>
+    </section>
+
+    <section id="view-planner" class="view">
+      <div class="view-head"><h2>Plan the next call</h2></div>
+      <p class="muted lede">Some days the stories pour out, some days they don't. TabPFN learns from your own rated sessions which times and topics lead to the recordings you treasure.</p>
+      <div id="plannerBody"></div>
+      <div class="split">
+        <div class="card">
+          <h3>Questions saved for next time</h3>
+          <form id="qForm" class="row"><input id="qInput" placeholder="Add a question to ask"><button class="primary" type="submit">Add</button></form>
+          <ul id="qList" class="qlist"></ul>
+        </div>
+        <div class="card">
+          <h3>Session log</h3>
+          <p class="muted small">Every recording adds a row. Rate recordings in the Archive. Already kept a call log? Import a CSV with columns <code>date, time, duration_min, asked_by, topic, rating</code>.</p>
+          <label class="link">Import CSV<input type="file" id="csvInput" accept=".csv" hidden></label>
+          <div id="sessionTable"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-settings" class="view">
+      <div class="view-head"><h2>Settings</h2></div>
+      <form id="familyForm" class="card fields">
+        <label>Whose voice is this?<input id="elderName" placeholder="Their name, the way you say it"></label>
+        <label>Pronouns<select id="pronoun"><option value="she">she / her</option><option value="he">he / him</option><option value="they">they / them</option></select></label>
+        <label>Kept by<input id="familyName" placeholder="e.g. her friends from uni"></label>
+        <label>Who asks the questions (comma separated)<input id="askers" placeholder="Ada, Chidi"></label>
+        <div class="row"><button class="primary" type="submit">Save</button><span id="familySaved" class="muted small"></span></div>
+      </form>
+      <div class="card">
+        <h3>Passcode</h3>
+        <p class="muted small" id="passNote">Needed to add, rate or delete when the archive is shared publicly.</p>
+        <form id="passForm" class="row"><input id="passInput" type="password" placeholder="Passcode"><button class="primary" type="submit">Unlock</button></form>
+      </div>
+      <div class="card">
+        <h3>What is running</h3>
+        <table class="status-table" id="statusTable"></table>
+      </div>
+    </section>
+  </main>
+
+  <div class="player hidden" id="player">
+    <button id="playBtn" class="play" aria-label="Play or pause"></button>
+    <div class="player-main">
+      <div class="player-title"><strong id="playerTitle"></strong><span id="playerTime" class="muted"></span></div>
+      <p id="playerCaption" class="caption"></p>
+      <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek">
+    </div>
+    <button id="closePlayer" class="link" aria-label="Close player">Close</button>
+    <audio id="audio" preload="metadata"></audio>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

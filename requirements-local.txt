@@ -1,0 +1,4 @@
+-r requirements.txt
+faster-whisper>=1.0
+av==16.1.0
+pytest>=8
