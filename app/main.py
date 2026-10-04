@@ -337,6 +337,13 @@ def recipes(space: str = Depends(space_of)):
     return book.recipes(space)
 
 
+@app.get("/api/qr/{memo_id}")
+def qr(memo_id: str, space: str = Depends(space_of)):
+    """The QR code from the printed book, for one recording."""
+    target = f"{config.PUBLIC_BASE_URL}/app{'?space=try' if space == store.TRY else ''}#memo/{memo_id}"
+    return Response(book._qr_svg(target), media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.get("/book", response_class=HTMLResponse)
 def recipe_book(space: str = Depends(space_of)):
     return book.render(space)

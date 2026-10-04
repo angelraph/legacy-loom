@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css?v=12">
+  <link rel="stylesheet" href="/static/styles.css?v=13">
 </head>
 <body class="site">
   <header class="top">
@@ -73,8 +73,8 @@
 
         <div class="panels">
           <div class="panel panel-a">
-            <div class="panel-copy"><p class="kicker">Recipe book</p><h3>A cookbook <em>in their voice</em></h3><p>Every dish they explain becomes a printable page. The QR code on it plays them telling it.</p></div>
-            <div class="panel-art"><div class="card-stack"><div class="mini-card back"></div><div class="mini-card"><b></b><i style="width:80%"></i><i style="width:60%"></i><i style="width:70%"></i><span class="mini-qr"></span></div></div></div>
+            <div class="panel-copy"><p class="kicker">Recipe book</p><h3>A cookbook <em>in their voice</em></h3><p>Every dish they explain becomes a printable page. The QR code on it plays them telling it.</p><p class="live-count" id="recipeCount"></p><a class="panel-link" href="/book" target="_blank" rel="noopener">Open the book &rarr;</a></div>
+            <div class="panel-art" id="recipeArt"><div class="card-stack"><div class="mini-card back"></div><div class="mini-card"><b></b><i style="width:80%"></i><i style="width:60%"></i><i style="width:70%"></i><span class="mini-qr"></span></div></div></div>
           </div>
           <div class="panel panel-b">
             <div class="panel-copy"><p class="kicker">Timeline</p><h3>A life, <em>in order</em></h3><p>Stories land by when they happened, not when they were recorded.</p></div>
@@ -122,5 +122,6 @@
       });
     })();
   </script>
+  <script src="/static/landing.js?v=1"></script>
 </body>
 </html>
