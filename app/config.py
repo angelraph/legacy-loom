@@ -40,7 +40,16 @@ TEXT_INDEX = "chunks_text"
 
 # TabPFN
 TABPFN_TOKEN = _get("TABPFN_TOKEN")
+# On Vercel the planner runs as its own function (see tabpfn_api/).
+PLANNER_URL = _get("PLANNER_URL")
 PLANNER_MIN_ROWS = int(_get("PLANNER_MIN_ROWS", "8"))
+
+# Serverless hosts (Vercel) freeze a function once it has replied, so work happens inside the request.
+SERVERLESS = bool(os.getenv("VERCEL"))
+if SERVERLESS:
+    # Only /tmp is writable there; model files are cached in it between warm invocations.
+    os.environ.setdefault("HF_HOME", "/tmp/hf")
+    os.environ.setdefault("FASTEMBED_CACHE_PATH", "/tmp/fastembed")
 
 # App
 APP_PASSCODE = _get("APP_PASSCODE")  # when set, anything that changes data needs it

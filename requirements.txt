@@ -6,6 +6,4 @@ httpx>=0.27
 python-dotenv>=1.0
 fastembed>=0.4
 numpy>=1.26
-pandas>=2.2
-tabpfn-client>=0.1
 qrcode>=7.4

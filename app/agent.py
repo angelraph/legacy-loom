@@ -82,7 +82,7 @@ def run_tool(call: dict, question: str) -> dict:
             {"memo_id": str(m["_id"]), "title": m["title"], "year": m.get("year"), "era": m.get("era"),
              "summary": m.get("summary", "")} for m in memos]}
     if tool == "plan_calls":
-        return {"tool": tool, "query": query, "plan": planner.plan(store.list_sessions())}
+        return {"tool": tool, "query": query, "plan": planner.forecast()}
     return {"tool": tool, "query": query}
 
 
@@ -100,7 +100,9 @@ def build_material(results: list[dict]) -> tuple[str, list[dict]]:
             parts.append(f"[{len(sources)}] \"{s['title']}\" ({where}): {s['text']}")
         for rec in r.get("recipes", []):
             rc = rec["recipe"]
-            card = [f"Recipe card \"{rc['name']}\" (from the recording \"{rec['title']}\")"]
+            sources.append({"memo_id": rec["memo_id"], "title": rec["title"], "start": 0.0, "end": 0.0,
+                            "text": f"Recipe card: {rc['name']}", "overview": True, "via": ["recipe"]})
+            card = [f"[{len(sources)}] Recipe card \"{rc['name']}\" (from the recording \"{rec['title']}\")"]
             if rc.get("serves"):
                 card.append(f"Serves: {rc['serves']}")
             card.append("Ingredients: " + "; ".join(rc["ingredients"]))

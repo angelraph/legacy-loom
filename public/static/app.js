@@ -416,9 +416,18 @@ $("#uploadForm").addEventListener("submit", async (e) => {
     const fd = new FormData();
     fd.append("file", f, f.name); fd.append("recorded_at", when);
     fd.append("asked_by", $("#askedBy").value); fd.append("prompt_topic", $("#promptTopic").value);
-    const line = document.createElement("p"); line.textContent = `Uploading ${f.name}`; log.prepend(line);
-    try { await api("/api/memos", { method: "POST", body: fd }); line.innerHTML = `${esc(f.name)} saved. <a href="#archive">Follow it in the Archive</a>`; }
-    catch (err) { line.innerHTML = `<span class="error">${esc(f.name)}: ${esc(err.message)}</span>`; }
+    const line = document.createElement("p"); log.prepend(line);
+    const maxMb = state.statusData?.max_upload_mb || 60;
+    if (f.size > maxMb * 1024 * 1024) { line.innerHTML = `<span class="error">${esc(f.name)} is over ${maxMb} MB. Trim it or send a shorter note.</span>`; continue; }
+    line.innerHTML = state.statusData?.serverless
+      ? `<span class="spinner"></span> Listening to ${esc(f.name)} and filing it. This takes about a minute.`
+      : `<span class="spinner"></span> Uploading ${esc(f.name)}`;
+    try {
+      const r = await api("/api/memos", { method: "POST", body: fd });
+      line.innerHTML = r.status === "error"
+        ? `<span class="error">${esc(f.name)}: ${esc(r.error)}</span>`
+        : `${esc(f.name)} ${r.status === "ready" ? "is in the archive" : "saved"}. <a href="#memo/${r.id}">Open it</a>`;
+    } catch (err) { line.innerHTML = `<span class="error">${esc(f.name)}: ${esc(err.message)}</span>`; }
   }
   $("#promptTopic").value = "";
 });

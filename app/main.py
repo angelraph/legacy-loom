@@ -9,6 +9,7 @@ from datetime import datetime
 from bson import ObjectId
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingResponse
+from fastapi.concurrency import run_in_threadpool
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -16,10 +17,13 @@ from . import agent, book, config, embed, ingest, llm, planner, store, transcrib
 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI(title="Legacy Loom")
-WEB = config.ROOT / "web"
-app.mount("/static", StaticFiles(directory=WEB), name="static")
+WEB = config.ROOT / "public"
+if (WEB / "static").is_dir():  # on Vercel the CDN serves public/ and it is not in the function
+    app.mount("/static", StaticFiles(directory=WEB / "static"), name="static")
 
-MAX_UPLOAD = 60 * 1024 * 1024
+# Vercel caps a request body at 4.5 MB. A WhatsApp voice note of that size is over 30 minutes long.
+MAX_UPLOAD = (4 if config.SERVERLESS else 60) * 1024 * 1024
+AUDIO_SLICE = 2 * 1024 * 1024
 
 
 def require_key(x_family_key: str | None = Header(default=None)):
@@ -53,7 +57,8 @@ def index():
 def status():
     return {"gemma": llm.status(), "atlas": store.status(), "transcriber": transcribe.status(),
             "tabpfn": planner.status(), "elevenlabs": voice.status(),
-            "embedding_model": config.EMBED_MODEL, "read_only": bool(config.APP_PASSCODE)}
+            "embedding_model": config.EMBED_MODEL, "read_only": bool(config.APP_PASSCODE),
+            "max_upload_mb": MAX_UPLOAD // (1024 * 1024), "serverless": config.SERVERLESS}
 
 
 @app.post("/api/auth/check")
@@ -82,7 +87,7 @@ async def upload_memo(background: BackgroundTasks, file: UploadFile = File(...),
     if not data:
         raise HTTPException(400, "Empty file")
     if len(data) > MAX_UPLOAD:
-        raise HTTPException(413, "Recordings up to 60 MB please")
+        raise HTTPException(413, f"Recordings up to {MAX_UPLOAD // (1024 * 1024)} MB please")
     try:
         when = datetime.fromisoformat(recorded_at)
     except ValueError:
@@ -94,6 +99,10 @@ async def upload_memo(background: BackgroundTasks, file: UploadFile = File(...),
         "asked_by": asked_by.strip()[:40], "prompt_topic": prompt_topic.strip().lower()[:40],
         "status": "queued", "title": file.filename or "New recording", "rating": None,
     })
+    if config.SERVERLESS:
+        await run_in_threadpool(ingest.process, memo_id)
+        m = store.db().memos.find_one({"_id": memo_id}, {"status": 1, "error": 1})
+        return {"id": str(memo_id), "status": m["status"], "error": m.get("error")}
     background.add_task(ingest.process, memo_id)
     return {"id": str(memo_id), "status": "queued"}
 
@@ -138,7 +147,10 @@ def patch_memo(memo_id: str, patch: MemoPatch):
 def reprocess(memo_id: str, background: BackgroundTasks):
     mid = store.oid(memo_id)
     store.update_memo(mid, {"status": "queued", "error": None})
-    background.add_task(ingest.process, mid)
+    if config.SERVERLESS:
+        ingest.process(mid)
+    else:
+        background.add_task(ingest.process, mid)
     return {"ok": True}
 
 
@@ -158,14 +170,21 @@ def audio(audio_id: str, range: str | None = Header(default=None)):
     if range and range.startswith("bytes="):
         start_s, _, end_s = range[6:].partition("-")
         start = int(start_s) if start_s else 0
-        end = min(int(end_s) if end_s else size - 1, size - 1)
+        # Answer in slices of at most 2 MB; players ask again for the rest.
+        end = min(int(end_s) if end_s else size - 1, size - 1, start + AUDIO_SLICE - 1)
         if start >= size:
             return Response(status_code=416, headers={"Content-Range": f"bytes */{size}"})
         f.seek(start)
         body = f.read(end - start + 1)
         headers["Content-Range"] = f"bytes {start}-{end}/{size}"
         return Response(body, status_code=206, media_type=mime, headers=headers)
-    return Response(f.read(), media_type=mime, headers=headers)
+    headers["Content-Length"] = str(size)
+
+    def chunks():
+        while piece := f.read(256 * 1024):
+            yield piece
+
+    return StreamingResponse(chunks(), media_type=mime, headers=headers)
 
 
 @app.get("/api/memos/{memo_id}/audio")
@@ -298,7 +317,7 @@ def delete_session(sid: str):
 @app.get("/api/planner")
 def plan(asked_by: str | None = None):
     try:
-        return jsonable(planner.plan(store.list_sessions(), asked_by=asked_by))
+        return jsonable(planner.forecast(asked_by=asked_by))
     except Exception as e:
         logging.exception("planner failed")
         raise HTTPException(502, f"TabPFN call failed: {e}")
@@ -311,5 +330,5 @@ def warm():
         embed.dim()
     except Exception:
         logging.exception("embedding model failed to load")
-    if config.MONGODB_URI:
+    if config.MONGODB_URI and not config.SERVERLESS:
         threading.Thread(target=ingest.resume_pending, daemon=True).start()

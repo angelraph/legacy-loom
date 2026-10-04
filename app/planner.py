@@ -28,6 +28,29 @@ def _models():
         return None, None, None
 
 
+def _client_installed() -> bool:
+    try:
+        import tabpfn_client  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def forecast(asked_by: str | None = None) -> dict:
+    """Run the planner here, or on Vercel ask the separate planner function that carries TabPFN.
+
+    The TabPFN client brings about 400 MB of scientific libraries, more than fits next to the
+    rest of the app in one serverless function, so it lives in its own function there.
+    """
+    from . import store
+    if not (config.SERVERLESS and not _client_installed()):
+        return plan(store.list_sessions(), asked_by=asked_by)
+    import httpx
+    r = httpx.get(config.PLANNER_URL or f"{config.PUBLIC_BASE_URL}/api/planner", params={"asked_by": asked_by} if asked_by else None, timeout=200)
+    r.raise_for_status()
+    return r.json()
+
+
 def status() -> dict:
     if config.TABPFN_TOKEN:
         return {"ok": True, "detail": "Prior Labs API token set"}
