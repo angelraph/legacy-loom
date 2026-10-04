@@ -239,7 +239,12 @@ $("#askForm").addEventListener("submit", (e) => { e.preventDefault(); const q = 
 
 function renderAnswer(text, sources) {
   let html = esc(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(/\[(\d+)\]/g, (m, n) => (sources[n - 1] ? `<button class="cite" data-n="${n}" title="${esc(sources[n - 1].title)}">${n}</button>` : m));
+  // Citations arrive as [2] or grouped as [1, 3]; each number becomes its own playable chip.
+  html = html.replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (m, group) => {
+    const chips = group.split(",").map((n) => n.trim()).filter((n) => sources[n - 1])
+      .map((n) => `<button class="cite" data-n="${n}" title="${esc(sources[n - 1].title)}">${n}</button>`);
+    return chips.length ? chips.join("") : m;
+  });
   return html;
 }
 

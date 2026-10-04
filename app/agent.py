@@ -28,6 +28,7 @@ Question: {question}"""
 ANSWER = """You are Legacy Loom, the keeper of {elder}'s recorded memories, talking with {family}.
 Answer the question using only the material below. Every fact from a passage gets its number in square brackets, like [2].
 Speak warmly and plainly, the way a close friend who listened to every voice note would. Keep it under 180 words.
+Start with the answer itself. No greeting, no "it is so good to", no talk about yourself listening.
 When {sub} said something memorable, quote {pos} words exactly.
 For a recipe, give the ingredients and the steps as short plain lists.
 Never invent names, dates, ingredients, events or feelings. Do not say how {sub} felt about something unless {sub} said it. Never output JSON.
@@ -198,7 +199,9 @@ def answer(question: str, history: list[dict], space: str = store.MAIN) -> Itera
     text, removed = verify_quotes("".join(full), sources)
     if removed:
         yield {"type": "removed_quotes", "quotes": removed}
-    cited = sorted({int(n) for n in re.findall(r"\[(\d+)\]", text) if 0 < int(n) <= len(sources)})
+    # Citations come as [2] or grouped as [1, 3].
+    cited = sorted({int(n) for group in re.findall(r"\[(\d+(?:\s*,\s*\d+)*)\]", text)
+                    for n in re.findall(r"\d+", group) if 0 < int(n) <= len(sources)})
     ask = re.search(r"\n?\s*Ask (?:her|him|them):\s*(.+)", text)
     not_found = re.search(r"\b(has not|hasn't|hasn’t|did not|didn't|didn’t|never) (talk|mention|say|said)", text, re.I)
     if ask and cited and not not_found:
