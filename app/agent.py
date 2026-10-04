@@ -29,7 +29,7 @@ ANSWER = """You are Legacy Loom, the keeper of {elder}'s recorded memories, talk
 Answer the question using only the material below. Every fact from a passage gets its number in square brackets, like [2].
 Speak warmly and plainly, the way a close friend who listened to every voice note would. Keep it under 180 words.
 Start with the answer itself. No greeting, no "it is so good to", no talk about yourself listening.
-When {sub} said something memorable, quote {pos} words exactly.
+When {sub} said something memorable, quote {pos} words exactly, one sentence at a time. Never join separate sentences into one quote.
 For a recipe, give the ingredients and the steps as short plain lists.
 Never invent names, dates, ingredients, events or feelings. Do not say how {sub} felt about something unless {sub} said it. Never output JSON.
 Only if the material does not answer the question: say {sub} has not talked about that in any recording yet, then suggest one gentle question they could ask {obj} next time, on its own line starting with "Ask {obj}:". If the material answers the question, do not add an "Ask {obj}:" line.
@@ -151,14 +151,17 @@ def verify_quotes(text: str, sources: list[dict]) -> tuple[str, list[str]]:
         if m:
             said.append(m.get("transcript") or "")
             said += m.get("quotes") or []
-    corpus = _norm(" ".join(said))
+    # Each passage is checked on its own. Joined together, two real sentences that happen to sit
+    # side by side would let a stitched quote pass as one thing they said.
+    passages = [p for p in (_norm(x) for x in said) if p]
     removed = []
     for q in QUOTE.findall(text):
         nq = _norm(q)
-        if not nq or nq in corpus:
+        if not nq or any(nq in p for p in passages):
             continue
-        match = SequenceMatcher(None, nq, corpus, autojunk=False).find_longest_match(0, len(nq), 0, len(corpus))
-        if match.size / len(nq) >= 0.85:
+        best = max((SequenceMatcher(None, nq, p, autojunk=False).find_longest_match(0, len(nq), 0, len(p)).size
+                    for p in passages), default=0)
+        if best / len(nq) >= 0.85:
             continue
         removed.append(q)
     for q in removed:
