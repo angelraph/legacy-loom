@@ -48,7 +48,7 @@ async def store_error(_: Request, exc: store.StoreError):
     return Response(json.dumps({"detail": str(exc)}), status_code=503, media_type="application/json")
 
 
-PAGES = {"/": "index.html", "/app": "app.html", "/docs": "docs.html", "/faq": "faq.html", "/support": "support.html"}
+PAGES = {"/": "index.html", "/app": "app.html", "/guide": "guide.html", "/docs": "docs.html", "/faq": "faq.html", "/support": "support.html"}
 
 
 def _page(name: str):

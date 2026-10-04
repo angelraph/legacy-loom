@@ -57,19 +57,21 @@ def render() -> str:
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root {{ --ink:#2b2118; --paper:#fbf6ec; --accent:#9a4a22; --rule:#e2d5bf; }}
+:root {{ --ink:#0f2420; --paper:#fbf3e7; --accent:#1c5047; --amber:#c76f14; --rule:#e8dcc6; }}
 * {{ box-sizing:border-box; }}
-body {{ margin:0; background:#e9e1d2; color:var(--ink); font-family:"Source Serif 4", Georgia, serif; line-height:1.55; }}
+body {{ margin:0; background:#ece2d0; color:var(--ink); font-family:"Source Serif 4", Georgia, serif; line-height:1.55; }}
 .toolbar {{ text-align:center; padding:16px; }}
 .toolbar button {{ font:inherit; padding:10px 18px; border:0; border-radius:999px; background:var(--accent); color:#fff; cursor:pointer; }}
 .cover, .page {{ background:var(--paper); max-width:780px; margin:16px auto; padding:56px 64px; box-shadow:0 2px 14px rgba(0,0,0,.08); }}
 .cover {{ text-align:center; padding:120px 64px; }}
-.cover h1 {{ font-family:Fraunces, serif; font-size:56px; margin:0 0 12px; font-weight:600; }}
+.cover h1 {{ font-family:Fraunces, serif; font-size:56px; margin:0 0 12px; font-weight:600; color:var(--ink); }}
+.cover h1 span {{ color:var(--amber); }}
+.cover .mark {{ width:140px; height:140px; border-radius:36px; margin-bottom:28px; }}
 .cover p {{ font-size:20px; margin:4px 0; }}
 h2 {{ font-family:Fraunces, serif; font-size:36px; margin:0 0 6px; color:var(--accent); font-weight:600; }}
 h3 {{ font-family:Fraunces, serif; font-size:18px; margin:18px 0 6px; }}
 .serves {{ margin:0; font-style:italic; }}
-blockquote {{ margin:18px 0; padding:4px 0 4px 18px; border-left:3px solid var(--accent); font-style:italic; font-size:19px; }}
+blockquote {{ margin:18px 0; padding:4px 0 4px 18px; border-left:3px solid var(--amber); font-style:italic; font-size:19px; }}
 .cols {{ display:grid; grid-template-columns:1fr 1.6fr; gap:32px; }}
 li {{ margin:4px 0; }}
 footer {{ display:flex; gap:16px; align-items:center; border-top:1px solid var(--rule); margin-top:28px; padding-top:16px; }}
@@ -79,6 +81,6 @@ footer {{ display:flex; gap:16px; align-items:center; border-top:1px solid var(-
 @media print {{ body {{ background:#fff; }} .toolbar {{ display:none; }} .cover, .page {{ box-shadow:none; margin:0; max-width:none; page-break-after:always; }} }}
 </style></head><body>
 <div class="toolbar"><button onclick="window.print()">Print or save as PDF</button></div>
-<section class="cover"><h1>{elder}'s Kitchen</h1><p>Recipes in {pr['pos']} own words</p><p>Kept by {family}</p><p><small>{len(items)} recipe{"s" if len(items) != 1 else ""}</small></p></section>
+<section class="cover"><img class="mark" src="{config.PUBLIC_BASE_URL}/static/emblem.png" alt="" width="140" height="140"><h1>{elder}'s <span>Kitchen</span></h1><p>Recipes in {pr['pos']} own words</p><p>Kept by {family}</p><p><small>{len(items)} recipe{"s" if len(items) != 1 else ""}</small></p></section>
 {"".join(pages)}
 </body></html>"""

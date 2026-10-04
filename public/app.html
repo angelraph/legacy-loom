@@ -5,18 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Legacy Loom App</title>
   <meta name="description" content="A private archive of one person's voice notes, powered by open models.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%239a4a22'/%3E%3Cpath d='M9 20c3-8 11-8 14 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M12 20c2-4.5 6-4.5 8 0' stroke='%23fbf6ec' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <meta property="og:image" content="https://legacy-loom-ashen.vercel.app/static/og.png">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css?v=5">
+  <link rel="stylesheet" href="/static/styles.css?v=7">
 </head>
 <body>
   <header class="top">
     <div class="nav-shell">
       <a class="brand" href="/" aria-label="Legacy Loom home">
-        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15"/><path d="M9 20c3-8 11-8 14 0M12 20c2-4.5 6-4.5 8 0"/></svg>
-        <span class="brand-text"><strong>Legacy Loom</strong><span id="subtitle">Voice notes, kept and searchable</span></span>
+        <img class="brand-mark" src="/static/emblem.png" alt="" width="40" height="40">
+        <span class="brand-text"><strong>Legacy <span class="loom">Loom</span></strong><span id="subtitle">Voice notes, kept and searchable</span></span>
       </a>
       <nav class="tabs" id="tabs" aria-label="Sections">
         <button data-view="ask" class="active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Ask</span></button>
@@ -124,7 +127,7 @@
     </section>
 
     <section id="view-settings" class="view">
-      <div class="view-head"><h2>Settings</h2></div>
+      <div class="view-head"><h2>Settings</h2><a class="ghost" href="/guide">How to use Legacy Loom</a></div>
       <form id="familyForm" class="card fields">
         <label>Whose voice is this?<input id="elderName" placeholder="Their name, the way you say it"></label>
         <label>Pronouns<select id="pronoun"><option value="she">she / her</option><option value="he">he / him</option><option value="they">they / them</option></select></label>
@@ -161,6 +164,6 @@
   </div>
 
   <div id="toast" class="toast"></div>
-  <script src="/static/app.js?v=3"></script>
+  <script src="/static/app.js?v=4"></script>
 </body>
 </html>

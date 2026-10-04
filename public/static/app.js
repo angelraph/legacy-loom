@@ -186,7 +186,7 @@ function buildSuggestions() {
   document.body.classList.toggle("empty-archive", empty);
   $("#suggestions").innerHTML = ready.length
     ? [...out].slice(0, 5).map((s) => `<button class="ghost">${esc(s)}</button>`).join("")
-    : `<div class="empty-start"><p>The archive is empty. Add a voice note and Legacy Loom will listen, file it and have answers ready.</p><a class="primary like-btn" href="#add">Add the first voice note</a></div>`;
+    : `<div class="empty-start"><p>The archive is empty. Add a voice note and Legacy Loom will listen, file it and have answers ready.</p><a class="primary like-btn" href="#add">Add the first voice note</a><a class="app-help" href="/guide">New here? Read the five minute guide</a></div>`;
 }
 $("#suggestions").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) ask(b.textContent); });
 
