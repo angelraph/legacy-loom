@@ -651,4 +651,12 @@ $("#csvInput").addEventListener("change", async (e) => {
   await refreshMemos();
   await checkAccess();
   route();
+  // /app?q=... opens the app and asks that question straight away, so a question can be shared as a link.
+  const url = new URL(location.href), q = url.searchParams.get("q");
+  if (q && state.memos.length) {
+    url.searchParams.delete("q");
+    history.replaceState(null, "", `${url.pathname}${url.search}#ask`);
+    show("ask");
+    ask(q.slice(0, 500));
+  }
 })();
